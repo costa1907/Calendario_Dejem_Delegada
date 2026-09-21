@@ -1,9 +1,11 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 125
+  VERSÃO ATUAL: 126
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v126: a tela "Imagem pronta" do PRINT agora mostra a versão do site em uso
+    (para conferir de relance se o aparelho está com a versão mais nova).
   v125: PRINT (imagem): a altura-alvo dos quadros de valores agora é medida direto
     no espaço dos calendários (topo ao fim dos meses, dividido nos dois quadros),
     sem depender da conta feita antes; assim eles ficam do tamanho dos calendários
@@ -1525,6 +1527,7 @@ html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; le
 .print-acoes button{ border:none; border-radius:8px; padding:12px 16px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; touch-action:manipulation; min-height:44px; }
 .print-acoes button[hidden]{ display:none; }
 .print-acoes button:disabled{ opacity:.5; cursor:default; }
+.print-versao{ margin:6px 0 0; font-size:11.5px; color:#6d7a89; text-align:center; }
 .print-status{ margin:10px 0 0; font-size:12.5px; color:#9fb0c3; min-height:16px; text-align:center; }
 /* Com janela aberta o fundo não rola (no iPhone o arrasto "vazava" para o site) */
 html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:none; }
@@ -1613,6 +1616,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       <button type="button" class="modal-btn-secondary" id="printClose">Fechar</button>
     </div>
     <p class="print-status" id="printStatus" role="status"></p>
+    <p class="print-versao" id="printVersao"></p>
   </div>
 </div>
 
@@ -2032,7 +2036,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 125;
+const VERSAO_SITE = 126;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3250,6 +3254,7 @@ function abrirModalPrint(blob){
   document.getElementById('printSavePng').hidden = celular;
   document.getElementById('printSavePdf').hidden = celular || !temPdf;
   document.getElementById('printDicaSalvar').hidden = !celular;
+  document.getElementById('printVersao').textContent = 'Versão do site: ' + VERSAO_SITE;
   printOverlay.classList.add('show');
 }
 document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
