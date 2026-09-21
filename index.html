@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 134
+  VERSÃO ATUAL: 135
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v135: janela ESCALA: o calendário da data não fecha mais sozinho ao abrir
+    (no iPhone o próprio campo dispara um "change" ao abrir, e eu o fechava
+    por causa disso). Agora o foco só sai quando o toque é fora do campo.
   v134: janela ESCALA: o campo "Primeiro dia de serviço" agora solta o foco
     no mesmo instante que o campo "Regime": qualquer toque fora dele (ou a
     escolha da data) tira o foco na hora, e a pausa depois de fechar o menu
@@ -2077,7 +2080,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 134;
+const VERSAO_SITE = 135;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3040,7 +3043,6 @@ document.getElementById('escalaCancelBtn').addEventListener('click', fecharModal
 escalaOverlay.addEventListener('click', e => { if(e.target === escalaOverlay) fecharModalEscala(); });
 document.addEventListener('click', e => { if(!escalaPicker.contains(e.target)) fecharEscalaPicker(); });
 document.addEventListener('pointerdown', e => { if(document.activeElement === escalaInicio && e.target !== escalaInicio) escalaInicio.blur(); }, true);
-escalaInicio.addEventListener('change', () => { setTimeout(() => escalaInicio.blur(), 0); });
 escalaInicio.addEventListener('input', atualizarPreviaEscala);
 escalaInicio.addEventListener('change', atualizarPreviaEscala);
 escalaAplicarBtn.addEventListener('click', () => {
