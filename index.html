@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 124
+  VERSÃO ATUAL: 125
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v125: PRINT (imagem): a altura-alvo dos quadros de valores agora é medida direto
+    no espaço dos calendários (topo ao fim dos meses, dividido nos dois quadros),
+    sem depender da conta feita antes; assim eles ficam do tamanho dos calendários
+    também no iPhone.
   v124: PRINT (imagem): os quadros de valores ficavam MAIORES que os calendários
     no iPhone (as linhas saem mais altas lá). Agora eles têm sempre a mesma
     altura dos calendários: se as linhas não couberem, as letras e o
@@ -2028,7 +2032,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 124;
+const VERSAO_SITE = 125;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3091,9 +3095,23 @@ ratesSaveBtn.addEventListener('click', async () => {
 function ajustarResumosParaPrint(){
   const col = document.querySelector('#calendars .summaries-col');
   if(!col) return;
-  col.style.height = 'auto';
-  col.querySelectorAll('.summary').forEach(sm => {
-    const alinhada = parseFloat(sm.style.height) || 0;   // altura igual à dos calendários
+  // Altura-alvo de cada quadro: mede o espaço real dos calendários (do topo dos meses ao fim
+  // deles) e divide entre os dois quadros, sem depender de contas feitas em outro momento.
+  const meses = document.querySelector('#calendars .cal-col .months');
+  const resumos = Array.from(col.querySelectorAll('.summary'));
+  let alvoAltura = 0;
+  if(meses && resumos.length === 2){
+    const rm = meses.getBoundingClientRect();
+    const espaco = parseFloat(getComputedStyle(col).rowGap) || parseFloat(getComputedStyle(col).gap) || 10;
+    alvoAltura = Math.floor((rm.height - espaco) / 2);
+    col.style.height = 'auto';
+    col.style.gap = espaco + 'px';
+    col.style.paddingTop = Math.max(rm.top - col.getBoundingClientRect().top, 0) + 'px';   // padding (e não margin): o gerador de imagem ignora margin aqui
+  } else {
+    col.style.height = 'auto';
+  }
+  resumos.forEach(sm => {
+    const alinhada = alvoAltura;   // altura igual à dos calendários
     const t = sm.querySelector('table');
     const cap = t ? t.querySelector('caption') : null;
     sm.style.height = 'auto';
@@ -3124,6 +3142,13 @@ function ajustarResumosParaPrint(){
     if(t) t.style.height = Math.max(alinhada - 8, 0) + 'px';  // linhas se distribuem até o fim do quadro
   });
 }
+// desfaz os ajustes temporários feitos só para a imagem (a tela volta ao normal)
+function limparResumosDoPrint(){
+  const col = document.querySelector('#calendars .summaries-col');
+  if(!col) return;
+  col.querySelectorAll('.summary, .summary table, .summary td, .summary caption').forEach(e => e.removeAttribute('style'));
+  col.style.marginTop = '';
+}
 async function gerarImagemCalendarios(){
   const alvo = document.getElementById('calendars');
   if(typeof html2canvas === 'undefined'){
@@ -3139,6 +3164,7 @@ async function gerarImagemCalendarios(){
     return await capturarCalendarios(alvo);
   }finally{
     document.documentElement.classList.remove('imprimindo');
+    limparResumosDoPrint();
     applyLayout();   // restaura as alturas dos quadros
   }
 }
