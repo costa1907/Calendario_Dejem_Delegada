@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 123
+  VERSÃO ATUAL: 124
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v124: PRINT (imagem): os quadros de valores ficavam MAIORES que os calendários
+    no iPhone (as linhas saem mais altas lá). Agora eles têm sempre a mesma
+    altura dos calendários: se as linhas não couberem, as letras e o
+    espaçamento encolhem só o necessário, e o Total continua aparecendo.
   v123: PRINT (imagem): reforço na correção do Total. Em vez de calcular a
     altura dos quadros de valores, a imagem agora deixa cada quadro com a altura
     livre (sem altura fixa e sem corte), então o Total aparece em qualquer
@@ -2024,7 +2028,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 123;
+const VERSAO_SITE = 124;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3087,17 +3091,37 @@ ratesSaveBtn.addEventListener('click', async () => {
 function ajustarResumosParaPrint(){
   const col = document.querySelector('#calendars .summaries-col');
   if(!col) return;
-  // A altura alinhada aos calendários vira altura MÍNIMA: se as linhas precisarem de mais
-  // (iPhone), o quadro cresce sozinho, sem altura fixa e sem corte, e o Total aparece.
   col.style.height = 'auto';
   col.querySelectorAll('.summary').forEach(sm => {
-    const alinhada = parseFloat(sm.style.height) || 0;
+    const alinhada = parseFloat(sm.style.height) || 0;   // altura igual à dos calendários
+    const t = sm.querySelector('table');
+    const cap = t ? t.querySelector('caption') : null;
     sm.style.height = 'auto';
     sm.style.flex = 'none';
     sm.style.overflow = 'visible';
-    sm.style.minHeight = alinhada ? alinhada + 'px' : '';
-    const t = sm.querySelector('table');
-    if(t) t.style.height = alinhada ? Math.max(alinhada - 8, 0) + 'px' : 'auto';
+    if(t) t.style.height = 'auto';
+    if(!alinhada){ return; }
+    // Em alguns aparelhos (iPhone) as linhas saem mais altas e o Total não cabe na altura dos
+    // calendários. Em vez de deixar o quadro maior, encolhe levemente as letras e o espaçamento
+    // das linhas até caber, mantendo o quadro do MESMO tamanho dos calendários.
+    const tds = Array.from(sm.querySelectorAll('td'));
+    const base = {
+      fonte: parseFloat(getComputedStyle(sm).fontSize),
+      cap: cap ? getComputedStyle(cap).fontSize : null,
+      tds: tds.map(td => ({ f: parseFloat(getComputedStyle(td).fontSize), p: parseFloat(getComputedStyle(td).paddingTop) }))
+    };
+    if(cap) cap.style.fontSize = base.cap;
+    sm.style.minHeight = '0';
+    let fator = 1;
+    for(let i = 0; i < 8; i++){
+      const nat = sm.offsetHeight;
+      if(nat <= alinhada - 2) break;
+      fator *= (alinhada - 2) / nat * 0.99;
+      sm.style.fontSize = (base.fonte * fator) + 'px';
+      tds.forEach((td, k) => { td.style.fontSize = (base.tds[k].f * fator) + 'px'; td.style.paddingTop = td.style.paddingBottom = (base.tds[k].p * fator) + 'px'; });
+    }
+    sm.style.minHeight = alinhada + 'px';                     // se ainda assim precisar, cresce sem cortar
+    if(t) t.style.height = Math.max(alinhada - 8, 0) + 'px';  // linhas se distribuem até o fim do quadro
   });
 }
 async function gerarImagemCalendarios(){
