@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 126
+  VERSÃO ATUAL: 127
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v127: PRINT (imagem): os quadros de valores agora recebem altura de linha
+    EXPLÍCITA (as 13 linhas, com o Total, dividem exatamente a altura dos
+    calendários), então o tamanho não depende mais da fonte/medida do aparelho.
+    A tela "Imagem pronta" também mostra o tamanho medido dos quadros.
   v126: a tela "Imagem pronta" do PRINT agora mostra a versão do site em uso
     (para conferir de relance se o aparelho está com a versão mais nova).
   v125: PRINT (imagem): a altura-alvo dos quadros de valores agora é medida direto
@@ -2036,7 +2040,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 126;
+const VERSAO_SITE = 127;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3096,55 +3100,46 @@ ratesSaveBtn.addEventListener('click', async () => {
 // usado pelo botão PRINT (IMAGEM) pra baixar o PNG.
 // Os quadros de valores têm altura fixa (alinhada aos calendários) e cortam o que passar.
 // Para a imagem, cada quadro cresce até caber TODAS as linhas (inclusive o Total).
+var diagPrint = '';
 function ajustarResumosParaPrint(){
+  diagPrint = '';
   const col = document.querySelector('#calendars .summaries-col');
   if(!col) return;
-  // Altura-alvo de cada quadro: mede o espaço real dos calendários (do topo dos meses ao fim
-  // deles) e divide entre os dois quadros, sem depender de contas feitas em outro momento.
+  // Altura-alvo de cada quadro: espaço real dos calendários (topo ao fim dos meses) dividido
+  // nos dois quadros.
   const meses = document.querySelector('#calendars .cal-col .months');
   const resumos = Array.from(col.querySelectorAll('.summary'));
-  let alvoAltura = 0;
-  if(meses && resumos.length === 2){
-    const rm = meses.getBoundingClientRect();
-    const espaco = parseFloat(getComputedStyle(col).rowGap) || parseFloat(getComputedStyle(col).gap) || 10;
-    alvoAltura = Math.floor((rm.height - espaco) / 2);
-    col.style.height = 'auto';
-    col.style.gap = espaco + 'px';
-    col.style.paddingTop = Math.max(rm.top - col.getBoundingClientRect().top, 0) + 'px';   // padding (e não margin): o gerador de imagem ignora margin aqui
-  } else {
-    col.style.height = 'auto';
-  }
+  if(!(meses && resumos.length === 2)){ col.style.height = 'auto'; return; }
+  const rm = meses.getBoundingClientRect();
+  const espaco = parseFloat(getComputedStyle(col).rowGap) || parseFloat(getComputedStyle(col).gap) || 10;
+  const alvo = Math.floor((rm.height - espaco) / 2);
+  col.style.height = 'auto';
+  col.style.gap = espaco + 'px';
+  col.style.paddingTop = Math.max(rm.top - col.getBoundingClientRect().top, 0) + 'px';   // padding (e não margin): o gerador de imagem ignora margin aqui
+  const reais = [];
   resumos.forEach(sm => {
-    const alinhada = alvoAltura;   // altura igual à dos calendários
     const t = sm.querySelector('table');
     const cap = t ? t.querySelector('caption') : null;
-    sm.style.height = 'auto';
+    const linhas = t ? Array.from(t.querySelectorAll('tr')) : [];
     sm.style.flex = 'none';
-    sm.style.overflow = 'visible';
-    if(t) t.style.height = 'auto';
-    if(!alinhada){ return; }
-    // Em alguns aparelhos (iPhone) as linhas saem mais altas e o Total não cabe na altura dos
-    // calendários. Em vez de deixar o quadro maior, encolhe levemente as letras e o espaçamento
-    // das linhas até caber, mantendo o quadro do MESMO tamanho dos calendários.
-    const tds = Array.from(sm.querySelectorAll('td'));
-    const base = {
-      fonte: parseFloat(getComputedStyle(sm).fontSize),
-      cap: cap ? getComputedStyle(cap).fontSize : null,
-      tds: tds.map(td => ({ f: parseFloat(getComputedStyle(td).fontSize), p: parseFloat(getComputedStyle(td).paddingTop) }))
-    };
-    if(cap) cap.style.fontSize = base.cap;
-    sm.style.minHeight = '0';
-    let fator = 1;
-    for(let i = 0; i < 8; i++){
-      const nat = sm.offsetHeight;
-      if(nat <= alinhada - 2) break;
-      fator *= (alinhada - 2) / nat * 0.99;
-      sm.style.fontSize = (base.fonte * fator) + 'px';
-      tds.forEach((td, k) => { td.style.fontSize = (base.tds[k].f * fator) + 'px'; td.style.paddingTop = td.style.paddingBottom = (base.tds[k].p * fator) + 'px'; });
-    }
-    sm.style.minHeight = alinhada + 'px';                     // se ainda assim precisar, cresce sem cortar
-    if(t) t.style.height = Math.max(alinhada - 8, 0) + 'px';  // linhas se distribuem até o fim do quadro
+    sm.style.height = alvo + 'px';
+    sm.style.overflow = 'hidden';
+    sm.style.paddingBottom = '0px';
+    if(!t || !linhas.length){ reais.push(Math.round(sm.offsetHeight)); return; }
+    t.style.height = 'auto';
+    const capAlt = cap ? cap.getBoundingClientRect().height + (parseFloat(getComputedStyle(cap).marginBottom) || 0) : 0;
+    // Cada linha recebe altura e line-height EXPLÍCITAS (iguais): assim o tamanho do quadro não
+    // depende da fonte/aparelho, e todas as linhas (com o Total) cabem exatamente na altura-alvo.
+    const h = Math.floor((alvo - capAlt - 4) / linhas.length * 100) / 100;
+    linhas.forEach(tr => { tr.style.height = h + 'px'; });
+    t.querySelectorAll('td').forEach(td => {
+      td.style.paddingTop = '0px'; td.style.paddingBottom = '0px';
+      td.style.lineHeight = (h - 1) + 'px'; td.style.height = h + 'px';
+      td.style.overflow = 'hidden';
+    });
+    reais.push(Math.round(sm.getBoundingClientRect().height));
   });
+  diagPrint = 'quadros ' + reais.join('/') + ' de ' + alvo + ' px';
 }
 // desfaz os ajustes temporários feitos só para a imagem (a tela volta ao normal)
 function limparResumosDoPrint(){
@@ -3254,7 +3249,7 @@ function abrirModalPrint(blob){
   document.getElementById('printSavePng').hidden = celular;
   document.getElementById('printSavePdf').hidden = celular || !temPdf;
   document.getElementById('printDicaSalvar').hidden = !celular;
-  document.getElementById('printVersao').textContent = 'Versão do site: ' + VERSAO_SITE;
+  document.getElementById('printVersao').textContent = 'Versão do site: ' + VERSAO_SITE + (diagPrint ? ' · ' + diagPrint : '');
   printOverlay.classList.add('show');
 }
 document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
