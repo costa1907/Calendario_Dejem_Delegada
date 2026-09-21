@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 127
+  VERSÃO ATUAL: 128
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v128: PRINT (imagem): (1) o contorno em volta do mês atual/selecionado não
+    aparece mais na imagem. (2) voltaram os botões Salvar PNG e Salvar PDF
+    também no celular (o arquivo abre numa janela à parte, sem mexer no
+    histórico do app). (3) enquanto a imagem é gerada, uma tela "Gerando
+    imagem..." cobre o site, então não se vê mais o app virar o layout de
+    computador por alguns segundos; a rolagem da página volta ao mesmo ponto.
   v127: PRINT (imagem): os quadros de valores agora recebem altura de linha
     EXPLÍCITA (as 13 linhas, com o Total, dividem exatamente a altura dos
     calendários), então o tamanho não depende mais da fonte/medida do aparelho.
@@ -1520,10 +1526,17 @@ html.tem-barra .calendars{ margin-bottom:110px; }
 /* ===== Ao gerar o PNG (html2canvas não desenha bem brilho neon nem sombra interna) ===== */
 html.imprimindo #calendars{ padding:32px !important; box-sizing:content-box; }
 html.imprimindo .month::after{ display:none !important; }
+html.imprimindo .month.mes-atual, html.imprimindo .month.mes-selecionado{ border-color:transparent !important; }
 html.imprimindo .month.mes-atual h3,
 html.imprimindo .month.mes-selecionado h3{ box-shadow:none !important; }
 html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; position:relative; }
 html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; left:0; top:0; right:0; bottom:0; border:2px solid #ffb020; border-radius:4px; box-sizing:border-box; }
+/* Tela que cobre o site enquanto a imagem é gerada (a página troca de layout por baixo) */
+#gerandoImagem{ position:fixed; inset:0; z-index:5000; background:#1e1e1e; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#e8eef5; font-size:16px; font-weight:600; }
+#gerandoImagem.show{ display:flex; }
+#gerandoImagem .gi-roda{ width:34px; height:34px; border-radius:50%; border:3px solid #33404f; border-top-color:var(--azul); animation:giGira .8s linear infinite; }
+@keyframes giGira{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){ #gerandoImagem .gi-roda{ animation:none; } }
 /* ===== Modal do PRINT (compartilhar) ===== */
 .print-preview{ display:block; width:100%; max-height:170px; object-fit:contain; background:#111; border:1px solid #2f3a48; border-radius:8px; margin:0 0 14px; }
 .print-dica{ margin:0 0 16px; font-size:12.5px; }
@@ -1605,13 +1618,15 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
   </div>
 </div>
 
+<div id="gerandoImagem" role="status" aria-live="polite"><div class="gi-roda"></div><div>Gerando imagem...</div></div>
+
 <div class="modal-overlay" id="printModalOverlay">
   <div class="modal-box">
     <div class="modal-icon info">&#128444;</div>
     <h3 class="modal-title">Imagem pronta</h3>
     <img id="printPreview" class="print-preview" alt="Prévia do calendário">
     <p class="modal-msg print-dica">Para o WhatsApp não perder qualidade, envie como <b>PDF</b>: ele não comprime documentos. Enviar como imagem é mais rápido, mas o WhatsApp reduz a qualidade das fotos.</p>
-    <p class="modal-msg print-dica" id="printDicaSalvar" hidden>Para guardar no aparelho, toque em Compartilhar e escolha <b>Salvar imagem</b> ou <b>Salvar em Arquivos</b>.</p>
+    <p class="modal-msg print-dica" id="printDicaSalvar" hidden>Para guardar no aparelho, use <b>Compartilhar</b> e escolha <b>Salvar imagem</b> ou <b>Salvar em Arquivos</b>. Os botões Salvar abrem o arquivo numa janela à parte.</p>
     <div class="print-acoes">
       <button type="button" class="modal-btn-primary" id="printShareImg">Compartilhar imagem</button>
       <button type="button" class="modal-btn-primary" id="printSharePdf">Compartilhar como PDF (sem perder qualidade)</button>
@@ -2040,7 +2055,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 127;
+const VERSAO_SITE = 128;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3218,6 +3233,14 @@ async function gerarPdfDoPrint(){
   return printPdfBlob;
 }
 function baixarBlob(blob, nome){
+  // celular: abre o arquivo numa janela à parte (não navega dentro do app, então o histórico dele não é alterado)
+  if(navigator.share && navigator.canShare){
+    const u = URL.createObjectURL(blob);
+    const w = window.open(u, '_blank', 'noopener');
+    if(!w){ printStatus.textContent = 'Não foi possível abrir o arquivo. Use Compartilhar.'; }
+    setTimeout(() => URL.revokeObjectURL(u), 120000);
+    return;
+  }
   const u = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = u; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
@@ -3246,8 +3269,8 @@ function abrirModalPrint(blob){
   // onde há compartilhamento (celular) o download por link abriria a imagem dentro do app e
   // sujaria o histórico dele: lá o salvar é feito pelo próprio Compartilhar
   const celular = podeCompartilhar(arqImg);
-  document.getElementById('printSavePng').hidden = celular;
-  document.getElementById('printSavePdf').hidden = celular || !temPdf;
+  document.getElementById('printSavePng').hidden = false;
+  document.getElementById('printSavePdf').hidden = !temPdf;
   document.getElementById('printDicaSalvar').hidden = !celular;
   document.getElementById('printVersao').textContent = 'Versão do site: ' + VERSAO_SITE + (diagPrint ? ' · ' + diagPrint : '');
   printOverlay.classList.add('show');
@@ -3272,11 +3295,22 @@ document.getElementById('printBtn').addEventListener('click', async () => {
   const textoOriginal = btn.textContent;
   btn.textContent = 'GERANDO...';
   btn.disabled = true;
+  const cobertura = document.getElementById('gerandoImagem');
+  const rolagem = window.scrollY, rolagemX = window.scrollX;
+  cobertura.classList.add('show');
+  // deixa a tela de cobertura aparecer ANTES do site trocar para o layout da imagem
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   try{
-    abrirModalPrint(await gerarImagemCalendarios());
+    const blob = await gerarImagemCalendarios();
+    cobertura.classList.remove('show');
+    window.scrollTo(rolagemX, rolagem);
+    abrirModalPrint(blob);
   }catch(err){
+    cobertura.classList.remove('show');
+    window.scrollTo(rolagemX, rolagem);
     await showAlert('Não foi possível gerar a imagem. Tente novamente.', 'Erro');
   }finally{
+    cobertura.classList.remove('show');
     btn.textContent = textoOriginal;
     btn.disabled = false;
   }
