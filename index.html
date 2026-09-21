@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 116
+  VERSÃO ATUAL: 117
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v117: janela ESCALA: ela não muda mais de tamanho ao trocar o regime ou a
+    data. Os textos de explicação e de prévia reservam sempre a altura da
+    maior mensagem possível, então nada "pula" nem aumenta/diminui a janela.
   v116: a atualização automática agora também acontece COM O SITE ABERTO: além
     de ao abrir/voltar para o app, ele confere a cada minuto (e ao focar a
     janela) se existe versão nova. Se você estiver no meio de algo (dias
@@ -1981,7 +1984,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 116;
+const VERSAO_SITE = 117;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2895,12 +2898,29 @@ function atualizarPreviaEscala(){
   escalaPrevia.textContent = txt;
   escalaAplicarBtn.disabled = r.novos === 0;
 }
+// Reserva a altura da MAIOR mensagem possível (explicação do regime e prévia),
+// para a janela não crescer/encolher a cada troca de opção.
+function fixarAlturaEscala(){
+  const medir = (el, textos) => {
+    el.style.minHeight = '0';
+    let max = 0;
+    textos.forEach(t => { el.textContent = t; max = Math.max(max, el.offsetHeight); });
+    el.style.minHeight = max + 'px';
+  };
+  medir(escalaObs, ESCALAS.map(r => r.obs));
+  medir(escalaPrevia, [
+    'Serão pintados 366 dias de Trabalho (azul), de 01/01/2026 a 31/12/2026.\n366 dias do regime já estavam pintados e serão mantidos.',
+    'Esse primeiro dia é depois de 2026. Escolha uma data até 31/12/2026 ou troque o ano exibido.',
+    'Nenhum dia novo para pintar: os dias desse regime em 2026 já estão pintados.'
+  ]);
+}
 function abrirModalEscala(){
   const e = lerEscala();
   if(e){ escalaRegimeId = e.id; escalaInicio.value = e.inicio; } else { escalaRegimeId = ESCALAS[0].id; escalaInicio.value = ''; }
   fecharEscalaPicker(); popularEscalaPicker();
-  atualizarPreviaEscala();
   escalaOverlay.classList.add('show');
+  fixarAlturaEscala();
+  atualizarPreviaEscala();
 }
 function fecharModalEscala(){ fecharEscalaPicker(); escalaOverlay.classList.remove('show'); }
 document.getElementById('escalaBtn').addEventListener('click', abrirModalEscala);
