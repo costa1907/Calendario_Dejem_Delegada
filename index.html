@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 108
+  VERSÃO ATUAL: 109
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v109: o app instalado na tela de início agora se atualiza sozinho: ao abrir
+    ou voltar para ele, confere no servidor se existe versão mais nova e, se
+    existir, recarrega (os dados ficam salvos, só some a seleção de dias).
   v108: CORREÇÃO GRAVE: o botão Apagar apagava o mês inteiro quando havia um mês
     ligado (neon / selecionado pelo título). Agora Apagar — como qualquer cor —
     só age nos dias que você tocou um a um; meses ligados (neon) nunca são
@@ -1821,7 +1824,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 108;
+const VERSAO_SITE = 109;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -1985,6 +1988,28 @@ document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible') ressincronizar();
 });
 window.addEventListener('online', ressincronizar);
+/* Auto-atualização: o app da tela de início não tem "puxar para atualizar" */
+let _verificandoVersao = false;
+async function verificarNovaVersao(){
+  if(_verificandoVersao || !navigator.onLine) return;
+  _verificandoVersao = true;
+  try{
+    const r = await fetch(location.pathname, { cache: 'reload' });
+    if(!r.ok) return;
+    const m = (await r.text()).match(/const VERSAO_SITE\s*=\s*(\d+)/);
+    if(m && Number(m[1]) > VERSAO_SITE){
+      let ja = null;
+      try{ ja = sessionStorage.getItem('cbpm_auto_reload'); }catch(e){}
+      if(ja === m[1]) return;
+      try{ sessionStorage.setItem('cbpm_auto_reload', m[1]); }catch(e){}
+      location.reload();
+    }
+  }catch(e){} finally { _verificandoVersao = false; }
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') verificarNovaVersao(); });
+window.addEventListener('pageshow', () => verificarNovaVersao());
+setTimeout(verificarNovaVersao, 1500);
+
 window.addEventListener('pageshow', (e) => { if(e.persisted) ressincronizar(); });
 
 // Janela de login / status
