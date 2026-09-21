@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 117
+  VERSÃO ATUAL: 118
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v118: janela ESCALA: os campos "Regime" e "Primeiro dia de serviço" ficaram
+    menores (largura máxima) e o campo da data não fica mais cortado/estourando
+    a janela no iPhone (o campo de data nativo do Safari tinha largura própria).
+    Enquanto a data está vazia aparece o texto "Toque para escolher".
   v117: janela ESCALA: ela não muda mais de tamanho ao trocar o regime ou a
     data. Os textos de explicação e de prévia reservam sempre a altura da
     maior mensagem possível, então nada "pula" nem aumenta/diminui a janela.
@@ -1460,14 +1464,22 @@ html.tem-barra .calendars{ margin-bottom:110px; }
 @media (prefers-reduced-motion:reduce){ #barraSel{ animation:none; } }
 /* ===== Modal Escala de serviço ===== */
 .modal-label{ display:block; font-size:12px; font-weight:700; color:#aab6c3; margin:0 0 6px; letter-spacing:.02em; }
-#escalaInicio{ color-scheme:dark; min-height:42px; }
+#escalaInicio{ color-scheme:dark; height:40px; min-height:0; margin:0; padding:0 10px; font-size:14px;
+  display:block; width:100%; min-width:0; max-width:100%; box-sizing:border-box;
+  -webkit-appearance:none; appearance:none; text-align:left; line-height:38px; }
+#escalaInicio::-webkit-date-and-time-value{ text-align:left; min-height:0; }
+.escala-data-wrap{ position:relative; max-width:250px; margin:0 0 20px; }
+.escala-data-ph{ position:absolute; left:11px; top:0; line-height:40px; font-size:14px; color:#6d7a89; pointer-events:none; display:none; }
+.escala-data-wrap.vazio .escala-data-ph{ display:block; }
+.escala-data-wrap.vazio #escalaInicio{ color:transparent; }
+.escala-data-wrap.vazio #escalaInicio::-webkit-datetime-edit{ opacity:0; }
 .escala-obs{ font-size:12.5px; color:#9fb0c3; line-height:1.45; margin:-8px 0 14px; }
 .escala-previa{ font-size:13px; line-height:1.45; margin:0 0 18px; padding:10px 12px; border-radius:8px; background:#111; border:1px solid #2f3a48; color:#e8eef5; white-space:pre-line; min-height:20px; }
 .escala-previa.erro{ border-color:#7a3a3a; color:#ffb4b4; }
-#escalaPicker{ margin:0 0 20px; }
-#escalaPicker .year-picker-btn{ width:100%; justify-content:space-between; min-height:42px; font-size:14px; }
+#escalaPicker{ margin:0 0 20px; max-width:250px; }
+#escalaPicker .year-picker-btn{ width:100%; justify-content:space-between; min-height:40px; padding:6px 12px; font-size:14px; }
 #escalaPicker .year-picker-menu{ max-height:none; }
-#escalaPicker .year-picker-item{ padding:11px 12px; }
+#escalaPicker .year-picker-item{ padding:9px 12px; font-size:14px; }
 .escala-dica{ margin:8px 0 0; padding:10px 14px; border-radius:8px; background:#141a20; border:1px solid #2a3a48; color:#b9cadb; font-size:13px; line-height:1.45; text-align:center; }
 /* ===== Ao gerar o PNG (html2canvas não desenha bem brilho neon nem sombra interna) ===== */
 html.imprimindo .month::after{ display:none !important; }
@@ -1582,7 +1594,7 @@ html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; le
       <div class="year-picker-menu" id="escalaPickerMenu" role="listbox"></div>
     </div>
     <label class="modal-label" for="escalaInicio">Primeiro dia de serviço</label>
-    <input type="date" class="modal-input" id="escalaInicio">
+    <div class="escala-data-wrap vazio" id="escalaDataWrap"><input type="date" class="modal-input" id="escalaInicio"><span class="escala-data-ph">Toque para escolher</span></div>
     <p class="escala-obs" id="escalaObs"></p>
     <p class="escala-previa" id="escalaPrevia" aria-live="polite"></p>
     <div class="modal-actions">
@@ -1984,7 +1996,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 117;
+const VERSAO_SITE = 118;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2879,6 +2891,7 @@ escalaPickerBtn.addEventListener('click', e => { e.stopPropagation(); escalaPick
 popularEscalaPicker();
 function brData(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
 function atualizarPreviaEscala(){
+  document.getElementById('escalaDataWrap').classList.toggle('vazio', !escalaInicio.value);
   const reg = ESCALAS.find(r => r.id === escalaRegimeId);
   escalaObs.textContent = reg.obs;
   escalaPrevia.classList.remove('erro');
