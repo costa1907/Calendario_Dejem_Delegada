@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 110
+  VERSÃO ATUAL: 111
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v111: virada de dia/mês com o site aberto. O anel de "hoje" e o neon do mês
+    atual agora se atualizam sozinhos (ao voltar para o app e a cada minuto);
+    no mês novo o neon acende de novo, mesmo que você tenha apagado o do mês
+    anterior. Se o ano exibido for o atual, o site também rola até o mês novo.
   v110: barra de seleção no rodapé. Mostra quantos dias estão selecionados e
     quais (por atividade e mês) com o botão Limpar. Ao tocar numa cor ou em
     Apagar, a barra pede confirmação ("Aplicar Trabalho a 3 dias?") e só então
@@ -1757,6 +1761,7 @@ function cellKey(calKey, year, dateStr){
 function fmtDate(y,m,d){
   return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
+var _diaRender = '';
 function hojeStr(){ const h = new Date(); return fmtDate(h.getFullYear(), h.getMonth(), h.getDate()); }
 // rola até o mês de hoje (só se o ano exibido for o atual)
 function rolarParaMesAtual(){
@@ -1874,7 +1879,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 110;
+const VERSAO_SITE = 111;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2059,6 +2064,19 @@ async function verificarNovaVersao(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') verificarNovaVersao(); });
 window.addEventListener('pageshow', () => verificarNovaVersao());
 setTimeout(verificarNovaVersao, 1500);
+
+// Virada de dia/mês com o site aberto: refaz o destaque de "hoje" e do mês atual
+function verificarVirada(){
+  const hoje = hojeStr();
+  if(!_diaRender || hoje === _diaRender) return;
+  const mudouMes = hoje.slice(0,7) !== _diaRender.slice(0,7);
+  if(mudouMes) Object.keys(neonDesligado).forEach(k => delete neonDesligado[k]);
+  render();
+  if(mudouMes && currentYear === new Date().getFullYear()) requestAnimationFrame(() => rolarParaMesAtual());
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') verificarVirada(); });
+window.addEventListener('pageshow', verificarVirada);
+setInterval(verificarVirada, 60000);
 
 window.addEventListener('pageshow', (e) => { if(e.persisted) ressincronizar(); });
 
@@ -2259,6 +2277,7 @@ window.addEventListener('orientationchange', agendarLayout);
 let mesAnimar = null;
 const neonDesligado = {};   // 'calendario|ano' -> true quando o neon do mês atual foi apagado com um clique
 function render(){
+  _diaRender = hojeStr();
   const container = document.getElementById('calendars');
   // Como a tela é redesenhada a cada mudança, as animações do neon recomeçariam
   // do zero (e "pulariam"). Usamos um relógio global: cada redesenho começa a
