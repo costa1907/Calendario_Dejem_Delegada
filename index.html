@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 130
+  VERSÃO ATUAL: 131
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v131: janela ESCALA: tocar fora do menu de regimes só FECHA o menu e não
+    "atravessa" para o campo da data (que abria o calendário sozinho), e o
+    contrário também: logo depois de fechar o calendário da data, o toque não
+    abre o menu de regimes.
   v130: botão ESCALA: ficam só duas opções, "12x36" (vale para diurno e
     noturno, pois o calendário marca o dia em que o turno começa) e
     "12x24 / 12x48". Quem já tinha "12x36 diurno/noturno" salvo continua
@@ -2061,7 +2065,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 130;
+const VERSAO_SITE = 131;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2952,9 +2956,25 @@ function popularEscalaPicker(){
     escalaPickerMenu.appendChild(it);
   });
 }
-function abrirEscalaPicker(){ escalaPickerMenu.classList.add('show'); escalaPicker.classList.add('open'); escalaPickerBtn.setAttribute('aria-expanded','true'); }
-function fecharEscalaPicker(){ escalaPickerMenu.classList.remove('show'); escalaPicker.classList.remove('open'); escalaPickerBtn.setAttribute('aria-expanded','false'); }
-escalaPickerBtn.addEventListener('click', e => { e.stopPropagation(); escalaPickerMenu.classList.contains('show') ? fecharEscalaPicker() : abrirEscalaPicker(); });
+const escalaDataWrap = document.getElementById('escalaDataWrap');
+let escalaBloqueioRegime = 0, escalaLiberaData = null;
+function abrirEscalaPicker(){
+  clearTimeout(escalaLiberaData);
+  escalaDataWrap.style.pointerEvents = 'none';   // com o menu aberto, um toque fora não pode cair no campo da data
+  escalaPickerMenu.classList.add('show'); escalaPicker.classList.add('open'); escalaPickerBtn.setAttribute('aria-expanded','true');
+}
+function fecharEscalaPicker(){
+  escalaPickerMenu.classList.remove('show'); escalaPicker.classList.remove('open'); escalaPickerBtn.setAttribute('aria-expanded','false');
+  // só devolve o toque ao campo da data depois que o mesmo toque terminou de "atravessar"
+  clearTimeout(escalaLiberaData);
+  escalaLiberaData = setTimeout(() => { escalaDataWrap.style.pointerEvents = ''; }, 350);
+}
+escalaPickerBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if(Date.now() < escalaBloqueioRegime) return;   // acabou de fechar o calendário da data: não abre o menu por engano
+  escalaPickerMenu.classList.contains('show') ? fecharEscalaPicker() : abrirEscalaPicker();
+});
+escalaInicio.addEventListener('blur', () => { escalaBloqueioRegime = Date.now() + 450; });
 popularEscalaPicker();
 function brData(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
 function atualizarPreviaEscala(){
