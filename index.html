@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 115
+  VERSÃO ATUAL: 116
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v116: a atualização automática agora também acontece COM O SITE ABERTO: além
+    de ao abrir/voltar para o app, ele confere a cada minuto (e ao focar a
+    janela) se existe versão nova. Se você estiver no meio de algo (dias
+    selecionados, confirmação na barra ou uma janela aberta), espera terminar
+    para recarregar, sem perder o que estava fazendo.
   v115: PRINT (IMAGEM): ao gerar a imagem, abre uma tela com a prévia e as
     opções COMPARTILHAR (abre a lista do celular: WhatsApp, Telegram etc., e ali
     já se escolhe a conversa), COMPARTILHAR COMO PDF (o WhatsApp não comprime
@@ -1976,7 +1981,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 115;
+const VERSAO_SITE = 116;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2145,6 +2150,15 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', ressincronizar);
 /* Auto-atualização: o app da tela de início não tem "puxar para atualizar" */
 let _verificandoVersao = false;
+// não recarrega no meio de uma ação: dias selecionados, confirmação pendente ou janela aberta
+function usuarioOcupado(){
+  try{
+    if(selection.size > 0) return true;
+    if(typeof barraPendente !== 'undefined' && barraPendente !== null) return true;
+    if(document.querySelector('.modal-overlay.show')) return true;
+  }catch(e){}
+  return false;
+}
 async function verificarNovaVersao(){
   if(_verificandoVersao || !navigator.onLine) return;
   _verificandoVersao = true;
@@ -2153,6 +2167,7 @@ async function verificarNovaVersao(){
     if(!r.ok) return;
     const m = (await r.text()).match(/const VERSAO_SITE\s*=\s*(\d+)/);
     if(m && Number(m[1]) > VERSAO_SITE){
+      if(usuarioOcupado()) return;   // tenta de novo no próximo minuto
       let ja = null;
       try{ ja = sessionStorage.getItem('cbpm_auto_reload'); }catch(e){}
       if(ja === m[1]) return;
@@ -2164,6 +2179,8 @@ async function verificarNovaVersao(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') verificarNovaVersao(); });
 window.addEventListener('pageshow', () => verificarNovaVersao());
 setTimeout(verificarNovaVersao, 1500);
+setInterval(() => { if(document.visibilityState === 'visible') verificarNovaVersao(); }, 60000);
+window.addEventListener('focus', () => verificarNovaVersao());
 
 // Aviso "Site atualizado" depois que o site passa a rodar uma versão mais nova
 setTimeout(() => {
