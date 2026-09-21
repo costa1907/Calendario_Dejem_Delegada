@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 118
+  VERSÃO ATUAL: 119
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v119: com qualquer janela aberta (ESCALA, PRINT, valores, sincronizar, avisos),
+    arrastar o dedo/rolar não move mais o site que está atrás. Só rola o
+    conteúdo da própria janela quando ela é maior que a tela.
   v118: janela ESCALA: os campos "Regime" e "Primeiro dia de serviço" ficaram
     menores (largura máxima) e o campo da data não fica mais cortado/estourando
     a janela no iPhone (o campo de data nativo do Safari tinha largura própria).
@@ -1495,6 +1498,10 @@ html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; le
 .print-acoes button[hidden]{ display:none; }
 .print-acoes button:disabled{ opacity:.5; cursor:default; }
 .print-status{ margin:10px 0 0; font-size:12.5px; color:#9fb0c3; min-height:16px; text-align:center; }
+/* Com janela aberta o fundo não rola (no iPhone o arrasto "vazava" para o site) */
+html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:none; }
+.modal-overlay{ overscroll-behavior:contain; }
+.modal-box{ overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
 </style>
 </head>
 <body>
@@ -1996,7 +2003,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 118;
+const VERSAO_SITE = 119;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2954,6 +2961,22 @@ escalaAplicarBtn.addEventListener('click', () => {
 });
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && escalaOverlay.classList.contains('show')){ if(escalaPickerMenu.classList.contains('show')) fecharEscalaPicker(); else fecharModalEscala(); } });
 
+
+// ===== Janelas abertas: trava a rolagem do site de fundo =====
+(function(){
+  const raiz = document.documentElement;
+  function atualizar(){ raiz.classList.toggle('modal-aberto', !!document.querySelector('.modal-overlay.show')); }
+  document.querySelectorAll('.modal-overlay').forEach(o => new MutationObserver(atualizar).observe(o, {attributes:true, attributeFilter:['class']}));
+  // toque/arrasto: só deixa rolar dentro da janela quando ela realmente rola
+  function bloquear(e){
+    if(!document.querySelector('.modal-overlay.show')) return;
+    const caixa = e.target.closest && e.target.closest('.modal-overlay.show .modal-box');
+    if(!caixa || caixa.scrollHeight <= caixa.clientHeight + 1) e.preventDefault();
+  }
+  document.addEventListener('touchmove', bloquear, {passive:false});
+  document.addEventListener('wheel', bloquear, {passive:false});
+  atualizar();
+})();
 // palette wiring: só um "flash" rápido ao clicar (some sozinho), sem marca fixa
 document.querySelectorAll('.swatch').forEach(sw => {
   sw.addEventListener('click', () => {
