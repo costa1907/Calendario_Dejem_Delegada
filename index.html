@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 113
+  VERSÃO ATUAL: 114
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v114: (1) o PRINT (imagem) agora sai limpo: sem a faixa/enchimento escuro do
+    neon do mês atual e com o dia de hoje marcado por um contorno âmbar que não
+    cobre a cor do dia (o gerador de imagem não desenha brilho nem sombra
+    interna). O título do mês aceso e a borda colorida continuam na imagem.
+    (2) depois de uma atualização automática, aparece na barra do rodapé
+    "Site atualizado para a versão N" por alguns segundos.
   v113: (1) o site agora começa EM BRANCO para quem abre pela primeira vez: os
     dados de exemplo (as datas pessoais) saíram do código; tudo vem do login
     (nuvem) ou do que a pessoa marcar / do botão ESCALA. O ano exibido passa a
@@ -1449,6 +1455,12 @@ html.tem-barra .calendars{ margin-bottom:110px; }
 #escalaPicker .year-picker-menu{ max-height:none; }
 #escalaPicker .year-picker-item{ padding:11px 12px; }
 .escala-dica{ margin:8px 0 0; padding:10px 14px; border-radius:8px; background:#141a20; border:1px solid #2a3a48; color:#b9cadb; font-size:13px; line-height:1.45; text-align:center; }
+/* ===== Ao gerar o PNG (html2canvas não desenha bem brilho neon nem sombra interna) ===== */
+html.imprimindo .month::after{ display:none !important; }
+html.imprimindo .month.mes-atual h3,
+html.imprimindo .month.mes-selecionado h3{ box-shadow:none !important; }
+html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; position:relative; }
+html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; left:0; top:0; right:0; bottom:0; border:2px solid #ffb020; border-radius:4px; box-sizing:border-box; }
 </style>
 </head>
 <body>
@@ -1933,7 +1945,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 113;
+const VERSAO_SITE = 114;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2121,6 +2133,15 @@ async function verificarNovaVersao(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') verificarNovaVersao(); });
 window.addEventListener('pageshow', () => verificarNovaVersao());
 setTimeout(verificarNovaVersao, 1500);
+
+// Aviso "Site atualizado" depois que o site passa a rodar uma versão mais nova
+setTimeout(() => {
+  try{
+    const vista = Number(localStorage.getItem('cbpm_versao_vista') || 0);
+    if(vista && vista < VERSAO_SITE) barraAviso('Site atualizado para a versão ' + VERSAO_SITE, 4000);
+    localStorage.setItem('cbpm_versao_vista', String(VERSAO_SITE));
+  }catch(e){}
+}, 900);
 
 // Virada de dia/mês com o site aberto: refaz o destaque de "hoje" e do mês atual
 function verificarVirada(){
@@ -2681,10 +2702,10 @@ function atualizarBarra(){
       (apagar ? '' : ' style="background:var(' + barraCorVar + ')"') + '>' + (apagar ? 'Apagar' : 'Confirmar') + '</button></div>';
   }
 }
-function barraAviso(txt){
+function barraAviso(txt, ms){
   barraMsg = txt; atualizarBarra();
   clearTimeout(barraMsgTimer);
-  barraMsgTimer = setTimeout(() => { barraMsg = ''; atualizarBarra(); }, 1800);
+  barraMsgTimer = setTimeout(() => { barraMsg = ''; atualizarBarra(); }, ms || 1800);
 }
 function pedirConfirmacao(cor, sw){
   const alvo = barraAlvo();
@@ -2945,9 +2966,11 @@ async function gerarImagemCalendarios(){
   // lado a lado + valores), mesmo quando o botão é clicado no celular ou com
   // a janela em outro tamanho. Depois volta ao layout normal.
   applyLayout('print');
+  document.documentElement.classList.add('imprimindo');
   try{
     return await capturarCalendarios(alvo);
   }finally{
+    document.documentElement.classList.remove('imprimindo');
     applyLayout();
   }
 }
