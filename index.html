@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 129
+  VERSÃO ATUAL: 130
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v130: botão ESCALA: ficam só duas opções, "12x36" (vale para diurno e
+    noturno, pois o calendário marca o dia em que o turno começa) e
+    "12x24 / 12x48". Quem já tinha "12x36 diurno/noturno" salvo continua
+    funcionando (vira "12x36").
   v129: PRINT (imagem): o título do mês atual sai preto como os outros (sem o
     destaque colorido) e o dia de hoje sai sem o contorno âmbar: a imagem não
     marca mais nada de "atual". Na tela "Imagem pronta" saiu a linha com a
@@ -2057,7 +2061,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 129;
+const VERSAO_SITE = 130;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2892,16 +2896,18 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && barraPenden
 // ===== ESCALA DE SERVIÇO: preenche o calendário de SERVIÇO a partir do regime =====
 // ciclo: 1 = dia em que um turno COMEÇA (pinta de azul), 0 = folga.
 const ESCALAS = [
-  { id:'12x36d',   nome:'12x36 diurno',            ciclo:[1,0],
-    obs:'Trabalha 12h e folga 36h: um dia sim, um dia não. Marca o dia em que o turno começa.' },
-  { id:'12x36n',   nome:'12x36 noturno',           ciclo:[1,0],
-    obs:'Trabalha 12h à noite e folga 36h: um dia sim, um dia não. Marca o dia em que o turno começa (o da noite), não o da manhã seguinte.' },
-  { id:'12x24_48', nome:'12x24 / 12x48 (2 x 2 dias)', ciclo:[1,1,0,0],
-    obs:'Diurno, 24h de folga, noturno, 48h de folga: 2 dias de serviço e 2 de folga. O primeiro dia é o do turno diurno; o segundo, o do noturno.' }
+  { id:'12x36',    nome:'12x36',
+    obs:'Trabalha 12h e folga 36h: um dia sim, um dia não. Vale para diurno e noturno: marca o dia em que o turno começa.',
+    ciclo:[1,0] },
+  { id:'12x24_48', nome:'12x24 / 12x48',
+    obs:'Diurno, 24h de folga, noturno, 48h de folga: 2 dias de serviço e 2 de folga. O primeiro dia é o do turno diurno; o segundo, o do noturno.',
+    ciclo:[1,1,0,0] }
 ];
+const ESCALA_IDS_ANTIGOS = { '12x36d':'12x36', '12x36n':'12x36' };   // versões anteriores
 const ESCALA_KEY = 'cbpm_escala_v1';
 function lerEscala(){
-  const e = lerJSONLocal(ESCALA_KEY);
+  let e = lerJSONLocal(ESCALA_KEY);
+  if(e && ESCALA_IDS_ANTIGOS[e.id]) e = Object.assign({}, e, { id: ESCALA_IDS_ANTIGOS[e.id] });
   return (e && ESCALAS.some(r => r.id === e.id) && /^\d{4}-\d{2}-\d{2}$/.test(e.inicio || '')) ? e : null;
 }
 function dataDeStr(str){ const [y,m,d] = str.split('-').map(Number); return new Date(y, m-1, d); }
