@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 111
+  VERSÃO ATUAL: 112
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v112: botão ESCALA: a pessoa escolhe o regime (12x36 diurno, 12x36 noturno ou
+    12x24/12x48) e o primeiro dia de serviço, e o calendário de SERVIÇO é
+    preenchido de azul no ano exibido, marcando o dia em que cada turno começa.
+    Só preenche dias vazios (nada já pintado é alterado; folgas verdes ficam).
+    Mostra a prévia de quantos dias serão pintados. O regime escolhido também
+    passa a ser usado em "+ CRIAR ANO" para continuar a sequência.
   v111: virada de dia/mês com o site aberto. O anel de "hoje" e o neon do mês
     atual agora se atualizam sozinhos (ao voltar para o app e a cada minuto);
     no mês novo o neon acende de novo, mesmo que você tenha apagado o do mês
@@ -1083,6 +1089,7 @@
   }
   .modal-btn-primary{ background:var(--azul); color:#04202b; }
   .modal-btn-primary:hover{ filter:brightness(1.1); }
+  .modal-btn-primary:disabled{ opacity:.4; cursor:default; filter:none; }
   .modal-btn-secondary{ background:#2c2c2c; color:#ddd; }
   .modal-btn-secondary:hover{ background:#3a3a3a; }
 
@@ -1423,6 +1430,12 @@
 html.tem-barra .calendars{ margin-bottom:110px; }
 @media print{ #barraSel{ display:none !important; } }
 @media (prefers-reduced-motion:reduce){ #barraSel{ animation:none; } }
+/* ===== Modal Escala de serviço ===== */
+.modal-label{ display:block; font-size:12px; font-weight:700; color:#aab6c3; margin:0 0 6px; letter-spacing:.02em; }
+#escalaRegime, #escalaInicio{ color-scheme:dark; min-height:42px; }
+.escala-obs{ font-size:12.5px; color:#9fb0c3; line-height:1.45; margin:-8px 0 14px; }
+.escala-previa{ font-size:13px; line-height:1.45; margin:0 0 18px; padding:10px 12px; border-radius:8px; background:#111; border:1px solid #2f3a48; color:#e8eef5; white-space:pre-line; min-height:20px; }
+.escala-previa.erro{ border-color:#7a3a3a; color:#ffb4b4; }
 </style>
 </head>
 <body>
@@ -1437,6 +1450,7 @@ html.tem-barra .calendars{ margin-bottom:110px; }
     <div class="year-picker-menu" id="yearPickerMenu" role="listbox"></div>
   </div>
   <button id="addYearBtn">+ CRIAR ANO</button>
+  <button id="escalaBtn">ESCALA</button>
   <button id="editRatesBtn">EDITAR VALORES</button>
   <button id="printBtn">PRINT (IMAGEM)</button>
   <button id="exportBtn">EXPORTAR</button>
@@ -1485,6 +1499,24 @@ html.tem-barra .calendars{ margin-bottom:110px; }
     <div class="modal-actions" id="modalActions">
       <button class="modal-btn-secondary" id="modalCancelBtn">Cancelar</button>
       <button class="modal-btn-primary" id="modalOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="escalaModalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon info">&#128197;</div>
+    <h3 class="modal-title">Escala de serviço</h3>
+    <p class="modal-msg">Escolha o seu regime e o primeiro dia de serviço. O calendário de SERVIÇO do ano exibido é preenchido automaticamente em azul.</p>
+    <label class="modal-label" for="escalaRegime">Regime</label>
+    <select class="modal-input" id="escalaRegime"></select>
+    <label class="modal-label" for="escalaInicio">Primeiro dia de serviço</label>
+    <input type="date" class="modal-input" id="escalaInicio">
+    <p class="escala-obs" id="escalaObs"></p>
+    <p class="escala-previa" id="escalaPrevia" aria-live="polite"></p>
+    <div class="modal-actions">
+      <button class="modal-btn-secondary" id="escalaCancelBtn">Cancelar</button>
+      <button class="modal-btn-primary" id="escalaAplicarBtn">Preencher</button>
     </div>
   </div>
 </div>
@@ -1812,6 +1844,8 @@ function anoTemServico(year){
   return Object.keys(data).some(k => k.startsWith('servico|' + year + '|'));
 }
 function gerarServicoContinuo(newYear){
+  const escSalva = lerEscala();
+  if(escSalva){ preencherCiclo(newYear, escSalva, true); return true; }
   // Encontra o último ano (menor que newYear) que já tem dados de SERVIÇO,
   // para descobrir em que ponto do ciclo 2x2 a sequência estava.
   const anteriores = YEARS.filter(y => y < newYear && anoTemServico(y));
@@ -1879,7 +1913,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 111;
+const VERSAO_SITE = 112;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2684,6 +2718,95 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && barraPenden
     document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
   }, true);
 })();
+
+
+// ===== ESCALA DE SERVIÇO: preenche o calendário de SERVIÇO a partir do regime =====
+// ciclo: 1 = dia em que um turno COMEÇA (pinta de azul), 0 = folga.
+const ESCALAS = [
+  { id:'12x36d',   nome:'12x36 diurno',            ciclo:[1,0],
+    obs:'Trabalha 12h e folga 36h: um dia sim, um dia não. Marca o dia em que o turno começa.' },
+  { id:'12x36n',   nome:'12x36 noturno',           ciclo:[1,0],
+    obs:'Trabalha 12h à noite e folga 36h: um dia sim, um dia não. Marca o dia em que o turno começa (o da noite), não o da manhã seguinte.' },
+  { id:'12x24_48', nome:'12x24 / 12x48 (2 x 2 dias)', ciclo:[1,1,0,0],
+    obs:'Diurno, 24h de folga, noturno, 48h de folga: 2 dias de serviço e 2 de folga. O primeiro dia é o do turno diurno; o segundo, o do noturno.' }
+];
+const ESCALA_KEY = 'cbpm_escala_v1';
+function lerEscala(){
+  const e = lerJSONLocal(ESCALA_KEY);
+  return (e && ESCALAS.some(r => r.id === e.id) && /^\d{4}-\d{2}-\d{2}$/.test(e.inicio || '')) ? e : null;
+}
+function dataDeStr(str){ const [y,m,d] = str.split('-').map(Number); return new Date(y, m-1, d); }
+function diasEntreDatas(a, b){ return Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000); }
+// Percorre o ano; se aplicar=true, pinta de azul só os dias VAZIOS do regime.
+function preencherCiclo(year, esc, aplicar){
+  const reg = ESCALAS.find(r => r.id === esc.id);
+  const inicio = dataDeStr(esc.inicio);
+  let d = new Date(year, 0, 1);
+  const fim = new Date(year, 11, 31);
+  let novos = 0, mantidos = 0, primeiro = null;
+  while(d <= fim){
+    const off = diasEntreDatas(inicio, d);
+    if(off >= 0 && reg.ciclo[off % reg.ciclo.length]){
+      const ds = fmtDate(d.getFullYear(), d.getMonth(), d.getDate());
+      if(getColorFor('servico', year, ds)) mantidos++;
+      else { novos++; if(!primeiro) primeiro = new Date(d); if(aplicar) setColorFor('servico', year, ds, 'azul'); }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return { novos, mantidos, primeiro };
+}
+const escalaOverlay = document.getElementById('escalaModalOverlay');
+const escalaRegime = document.getElementById('escalaRegime');
+const escalaInicio = document.getElementById('escalaInicio');
+const escalaPrevia = document.getElementById('escalaPrevia');
+const escalaObs = document.getElementById('escalaObs');
+const escalaAplicarBtn = document.getElementById('escalaAplicarBtn');
+ESCALAS.forEach(r => { const o = document.createElement('option'); o.value = r.id; o.textContent = r.nome; escalaRegime.appendChild(o); });
+function brData(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
+function atualizarPreviaEscala(){
+  const reg = ESCALAS.find(r => r.id === escalaRegime.value);
+  escalaObs.textContent = reg.obs;
+  escalaPrevia.classList.remove('erro');
+  escalaAplicarBtn.disabled = true;
+  if(!escalaInicio.value){ escalaPrevia.textContent = 'Informe o primeiro dia de serviço.'; return; }
+  const ini = dataDeStr(escalaInicio.value);
+  if(isNaN(ini.getTime())){ escalaPrevia.textContent = 'Data inválida.'; escalaPrevia.classList.add('erro'); return; }
+  if(ini.getFullYear() > currentYear){
+    escalaPrevia.textContent = 'Esse primeiro dia é depois de ' + currentYear + '. Escolha uma data até 31/12/' + currentYear + ' ou troque o ano exibido.';
+    escalaPrevia.classList.add('erro'); return;
+  }
+  const r = preencherCiclo(currentYear, { id: reg.id, inicio: escalaInicio.value }, false);
+  const de = ini.getFullYear() < currentYear ? '01/01/' + currentYear : brData(ini);
+  let txt = r.novos === 0 ? 'Nenhum dia novo para pintar: os dias desse regime em ' + currentYear + ' já estão pintados.'
+    : 'Serão pintados ' + r.novos + (r.novos === 1 ? ' dia' : ' dias') + ' de Trabalho (azul), de ' + de + ' a 31/12/' + currentYear + '.';
+  if(r.mantidos > 0) txt += '\n' + r.mantidos + (r.mantidos === 1 ? ' dia do regime já estava pintado e será mantido.' : ' dias do regime já estavam pintados e serão mantidos.');
+  escalaPrevia.textContent = txt;
+  escalaAplicarBtn.disabled = r.novos === 0;
+}
+function abrirModalEscala(){
+  const e = lerEscala();
+  if(e){ escalaRegime.value = e.id; escalaInicio.value = e.inicio; } else { escalaRegime.selectedIndex = 0; escalaInicio.value = ''; }
+  atualizarPreviaEscala();
+  escalaOverlay.classList.add('show');
+}
+function fecharModalEscala(){ escalaOverlay.classList.remove('show'); }
+document.getElementById('escalaBtn').addEventListener('click', abrirModalEscala);
+document.getElementById('escalaCancelBtn').addEventListener('click', fecharModalEscala);
+escalaOverlay.addEventListener('click', e => { if(e.target === escalaOverlay) fecharModalEscala(); });
+escalaRegime.addEventListener('change', atualizarPreviaEscala);
+escalaInicio.addEventListener('input', atualizarPreviaEscala);
+escalaInicio.addEventListener('change', atualizarPreviaEscala);
+escalaAplicarBtn.addEventListener('click', () => {
+  if(escalaAplicarBtn.disabled) return;
+  const esc = { id: escalaRegime.value, inicio: escalaInicio.value };
+  const r = preencherCiclo(currentYear, esc, true);
+  gravarJSONLocal(ESCALA_KEY, esc);
+  saveData();
+  fecharModalEscala();
+  if(activeTab !== 'servico') setTab('servico'); else render();
+  barraAviso(r.novos + (r.novos === 1 ? ' dia de serviço preenchido' : ' dias de serviço preenchidos'));
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && escalaOverlay.classList.contains('show')) fecharModalEscala(); });
 
 // palette wiring: só um "flash" rápido ao clicar (some sozinho), sem marca fixa
 document.querySelectorAll('.swatch').forEach(sw => {
