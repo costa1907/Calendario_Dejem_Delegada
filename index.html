@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 114
+  VERSÃO ATUAL: 115
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v115: PRINT (IMAGEM): ao gerar a imagem, abre uma tela com a prévia e as
+    opções COMPARTILHAR (abre a lista do celular: WhatsApp, Telegram etc., e ali
+    já se escolhe a conversa), COMPARTILHAR COMO PDF (o WhatsApp não comprime
+    documentos, então a qualidade fica intacta) e SALVAR (PNG ou PDF). A imagem
+    continua em alta resolução e sem perdas (PNG, escala 3x).
   v114: (1) o PRINT (imagem) agora sai limpo: sem a faixa/enchimento escuro do
     neon do mês atual e com o dia de hoje marcado por um contorno âmbar que não
     cobre a cor do dia (o gerador de imagem não desenha brilho nem sombra
@@ -426,6 +431,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#1e1e1e">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1461,6 +1467,14 @@ html.imprimindo .month.mes-atual h3,
 html.imprimindo .month.mes-selecionado h3{ box-shadow:none !important; }
 html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; position:relative; }
 html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; left:0; top:0; right:0; bottom:0; border:2px solid #ffb020; border-radius:4px; box-sizing:border-box; }
+/* ===== Modal do PRINT (compartilhar) ===== */
+.print-preview{ display:block; width:100%; max-height:170px; object-fit:contain; background:#111; border:1px solid #2f3a48; border-radius:8px; margin:0 0 14px; }
+.print-dica{ margin:0 0 16px; font-size:12.5px; }
+.print-acoes{ display:flex; flex-direction:column; gap:10px; }
+.print-acoes button{ border:none; border-radius:8px; padding:12px 16px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; touch-action:manipulation; min-height:44px; }
+.print-acoes button[hidden]{ display:none; }
+.print-acoes button:disabled{ opacity:.5; cursor:default; }
+.print-status{ margin:10px 0 0; font-size:12.5px; color:#9fb0c3; min-height:16px; text-align:center; }
 </style>
 </head>
 <body>
@@ -1526,6 +1540,23 @@ html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; le
       <button class="modal-btn-secondary" id="modalCancelBtn">Cancelar</button>
       <button class="modal-btn-primary" id="modalOkBtn">OK</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="printModalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon info">&#128444;</div>
+    <h3 class="modal-title">Imagem pronta</h3>
+    <img id="printPreview" class="print-preview" alt="Prévia do calendário">
+    <p class="modal-msg print-dica">Para o WhatsApp não perder qualidade, envie como <b>PDF</b>: ele não comprime documentos. Enviar como imagem é mais rápido, mas o WhatsApp reduz a qualidade das fotos.</p>
+    <div class="print-acoes">
+      <button type="button" class="modal-btn-primary" id="printShareImg">Compartilhar imagem</button>
+      <button type="button" class="modal-btn-primary" id="printSharePdf">Compartilhar como PDF (sem perder qualidade)</button>
+      <button type="button" class="modal-btn-secondary" id="printSavePng">Salvar PNG</button>
+      <button type="button" class="modal-btn-secondary" id="printSavePdf">Salvar PDF</button>
+      <button type="button" class="modal-btn-secondary" id="printClose">Fechar</button>
+    </div>
+    <p class="print-status" id="printStatus" role="status"></p>
   </div>
 </div>
 
@@ -1945,7 +1976,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 114;
+const VERSAO_SITE = 115;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3000,19 +3031,75 @@ async function capturarCalendarios(alvo){
   return blob;
 }
 
+// ===== PRINT: gera a imagem e abre a tela de compartilhar / salvar =====
+const printOverlay = document.getElementById('printModalOverlay');
+const printStatus = document.getElementById('printStatus');
+let printBlob = null, printPdfBlob = null, printUrl = null;
+function nomeArquivoPrint(ext){ return 'calendario_' + currentYear + '.' + ext; }
+function podeCompartilhar(arq){ try{ return !!(navigator.share && navigator.canShare && navigator.canShare({files:[arq]})); }catch(e){ return false; } }
+function blobParaDataUrl(blob){ return new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(blob); }); }
+// PDF com a imagem inteira, sem recompressão com perdas (o PNG entra como está)
+async function gerarPdfDoPrint(){
+  if(printPdfBlob) return printPdfBlob;
+  if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF indisponível');
+  const url = await blobParaDataUrl(printBlob);
+  const dim = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res({w: im.naturalWidth, h: im.naturalHeight}); im.onerror = rej; im.src = url; });
+  const pdf = new window.jspdf.jsPDF({ orientation: dim.w >= dim.h ? 'l' : 'p', unit: 'px', format: [dim.w, dim.h], compress: true, hotfixes: ['px_scaling'] });
+  pdf.addImage(url, 'PNG', 0, 0, dim.w, dim.h, undefined, 'FAST');
+  printPdfBlob = pdf.output('blob');
+  return printPdfBlob;
+}
+function baixarBlob(blob, nome){
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+async function compartilharBlob(blob, nome, tipo){
+  const arq = new File([blob], nome, { type: tipo });
+  try{ await navigator.share({ files: [arq], title: 'Calendário ' + currentYear }); }
+  catch(err){ if(err && err.name !== 'AbortError') printStatus.textContent = 'Não foi possível abrir o compartilhamento. Use Salvar.'; }
+}
+function fecharModalPrint(){
+  printOverlay.classList.remove('show');
+  if(printUrl){ URL.revokeObjectURL(printUrl); printUrl = null; }
+  printBlob = null; printPdfBlob = null; printStatus.textContent = '';
+}
+function abrirModalPrint(blob){
+  printBlob = blob; printPdfBlob = null; printStatus.textContent = '';
+  if(printUrl) URL.revokeObjectURL(printUrl);
+  printUrl = URL.createObjectURL(blob);
+  document.getElementById('printPreview').src = printUrl;
+  const arqImg = new File([blob], nomeArquivoPrint('png'), { type: 'image/png' });
+  const arqPdf = new File([new Blob(['%PDF'], {type:'application/pdf'})], nomeArquivoPrint('pdf'), { type: 'application/pdf' });
+  const temPdf = !!(window.jspdf && window.jspdf.jsPDF);
+  document.getElementById('printShareImg').hidden = !podeCompartilhar(arqImg);
+  document.getElementById('printSharePdf').hidden = !(temPdf && podeCompartilhar(arqPdf));
+  document.getElementById('printSavePdf').hidden = !temPdf;
+  printOverlay.classList.add('show');
+}
+document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
+document.getElementById('printSharePdf').addEventListener('click', async () => {
+  const b = document.getElementById('printSharePdf'); b.disabled = true; printStatus.textContent = 'Preparando o PDF...';
+  try{ const pdf = await gerarPdfDoPrint(); printStatus.textContent = ''; b.disabled = false; await compartilharBlob(pdf, nomeArquivoPrint('pdf'), 'application/pdf'); }
+  catch(err){ printStatus.textContent = 'Não foi possível criar o PDF.'; b.disabled = false; }
+});
+document.getElementById('printSavePng').addEventListener('click', () => baixarBlob(printBlob, nomeArquivoPrint('png')));
+document.getElementById('printSavePdf').addEventListener('click', async () => {
+  printStatus.textContent = 'Preparando o PDF...';
+  try{ baixarBlob(await gerarPdfDoPrint(), nomeArquivoPrint('pdf')); printStatus.textContent = ''; }
+  catch(err){ printStatus.textContent = 'Não foi possível criar o PDF.'; }
+});
+document.getElementById('printClose').addEventListener('click', fecharModalPrint);
+printOverlay.addEventListener('click', e => { if(e.target === printOverlay) fecharModalPrint(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && printOverlay.classList.contains('show')) fecharModalPrint(); });
 document.getElementById('printBtn').addEventListener('click', async () => {
   const btn = document.getElementById('printBtn');
   const textoOriginal = btn.textContent;
   btn.textContent = 'GERANDO...';
   btn.disabled = true;
   try{
-    const blob = await gerarImagemCalendarios();
-    const dataUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `calendario_${currentYear}.png`;
-    a.click();
-    URL.revokeObjectURL(dataUrl);
+    abrirModalPrint(await gerarImagemCalendarios());
   }catch(err){
     await showAlert('Não foi possível gerar a imagem. Tente novamente.', 'Erro');
   }finally{
