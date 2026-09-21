@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 107
+  VERSÃO ATUAL: 108
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v108: CORREÇÃO GRAVE: o botão Apagar apagava o mês inteiro quando havia um mês
+    ligado (neon / selecionado pelo título). Agora Apagar — como qualquer cor —
+    só age nos dias que você tocou um a um; meses ligados (neon) nunca são
+    pintados nem apagados. O neon do mês atual que vem aceso ao abrir também
+    não seleciona nada (vale igual para SERVIÇO, DELEGADA e DEJEM).
   v107: ligar/desligar um mês não faz mais o pulso dos outros meses ligados
     "reiniciar". Antes a tela era redesenhada e todas as animações voltavam
     ao começo; agora o pulso segue um relógio global (cada redesenho retoma
@@ -1816,7 +1821,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 107;
+const VERSAO_SITE = 108;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2424,10 +2429,10 @@ function selecaoEhMesInteiro(){
 
 function applyColorToSelection(color){
   if(selection.size === 0) return;
-  // Meses inteiros selecionados (neon) servem só pra destacar — nunca são
-  // pintados por uma cor da paleta e continuam ligados depois de aplicar a cor
-  // nos outros dias. Apagar (color vazio/null) é a única exceção: limpa tudo.
-  const meses = color ? chavesMesesInteirosSelecionados() : new Set();
+  // Meses inteiros selecionados (neon) servem só pra destacar — NUNCA são
+  // pintados nem apagados por uma cor/Apagar da paleta e continuam ligados
+  // depois. Cores e Apagar só agem nos dias que você tocou um a um.
+  const meses = chavesMesesInteirosSelecionados();
   const alvo = Array.from(selection).filter(k => !meses.has(k));
   if(alvo.length === 0) return;
   let bloqueados = 0;
