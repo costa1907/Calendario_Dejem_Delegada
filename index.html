@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 122
+  VERSÃO ATUAL: 123
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v123: PRINT (imagem): reforço na correção do Total. Em vez de calcular a
+    altura dos quadros de valores, a imagem agora deixa cada quadro com a altura
+    livre (sem altura fixa e sem corte), então o Total aparece em qualquer
+    aparelho, mesmo que as linhas saiam mais altas.
   v122: PRINT (imagem): os quadros de valores (DELEGADA e DEJEM) tinham altura
     fixa, calculada pela altura dos calendários; no iPhone as linhas saem um
     pouco mais altas e a linha do TOTAL ficava escondida. Agora, ao gerar a
@@ -2020,7 +2024,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 122;
+const VERSAO_SITE = 123;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3083,16 +3087,17 @@ ratesSaveBtn.addEventListener('click', async () => {
 function ajustarResumosParaPrint(){
   const col = document.querySelector('#calendars .summaries-col');
   if(!col) return;
+  // A altura alinhada aos calendários vira altura MÍNIMA: se as linhas precisarem de mais
+  // (iPhone), o quadro cresce sozinho, sem altura fixa e sem corte, e o Total aparece.
   col.style.height = 'auto';
   col.querySelectorAll('.summary').forEach(sm => {
-    const t = sm.querySelector('table');
-    const antes = sm.style.height;
-    sm.style.height = 'auto'; if(t) t.style.height = 'auto';
-    const natural = sm.offsetHeight;
-    if(t) t.style.height = '';
-    const atual = parseFloat(antes) || 0;
-    sm.style.height = Math.ceil(Math.max(natural, atual)) + 'px';
+    const alinhada = parseFloat(sm.style.height) || 0;
+    sm.style.height = 'auto';
     sm.style.flex = 'none';
+    sm.style.overflow = 'visible';
+    sm.style.minHeight = alinhada ? alinhada + 'px' : '';
+    const t = sm.querySelector('table');
+    if(t) t.style.height = alinhada ? Math.max(alinhada - 8, 0) + 'px' : 'auto';
   });
 }
 async function gerarImagemCalendarios(){
