@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 132
+  VERSÃO ATUAL: 133
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v133: janela ESCALA: o campo "Primeiro dia de serviço" solta o foco na hora
+    (antes o menu de regimes ficava bloqueado por quase meio segundo depois de
+    mexer na data). O nome do regime agora é "12x24 | 12x48" (barra em pé).
   v132: janela ESCALA: os textos "Regime" e "Primeiro dia de serviço" eram
     rótulos ligados aos campos e ocupavam a linha inteira, então tocar perto
     do campo (no rótulo) abria o menu/calendário. Agora os rótulos não são
@@ -2070,7 +2073,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 132;
+const VERSAO_SITE = 133;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2908,7 +2911,7 @@ const ESCALAS = [
   { id:'12x36',    nome:'12x36',
     obs:'Trabalha 12h e folga 36h: um dia sim, um dia não. Vale para diurno e noturno: marca o dia em que o turno começa.',
     ciclo:[1,0] },
-  { id:'12x24_48', nome:'12x24 / 12x48',
+  { id:'12x24_48', nome:'12x24 | 12x48',
     obs:'Diurno, 24h de folga, noturno, 48h de folga: 2 dias de serviço e 2 de folga. O primeiro dia é o do turno diurno; o segundo, o do noturno.',
     ciclo:[1,1,0,0] }
 ];
@@ -2972,14 +2975,14 @@ function fecharEscalaPicker(){
   escalaPickerMenu.classList.remove('show'); escalaPicker.classList.remove('open'); escalaPickerBtn.setAttribute('aria-expanded','false');
   // só devolve o toque ao campo da data depois que o mesmo toque terminou de "atravessar"
   clearTimeout(escalaLiberaData);
-  escalaLiberaData = setTimeout(() => { escalaDataWrap.style.pointerEvents = ''; }, 350);
+  escalaLiberaData = setTimeout(() => { escalaDataWrap.style.pointerEvents = ''; }, 120);
 }
 escalaPickerBtn.addEventListener('click', e => {
   e.stopPropagation();
-  if(Date.now() < escalaBloqueioRegime) return;   // acabou de fechar o calendário da data: não abre o menu por engano
+  if(document.activeElement === escalaInicio) escalaInicio.blur();   // solta o foco da data na hora
   escalaPickerMenu.classList.contains('show') ? fecharEscalaPicker() : abrirEscalaPicker();
 });
-escalaInicio.addEventListener('blur', () => { escalaBloqueioRegime = Date.now() + 450; });
+escalaPickerBtn.addEventListener('pointerdown', () => { if(document.activeElement === escalaInicio) escalaInicio.blur(); });
 popularEscalaPicker();
 function brData(d){ return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
 function atualizarPreviaEscala(){
