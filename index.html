@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 128
+  VERSÃO ATUAL: 129
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v129: PRINT (imagem): o título do mês atual sai preto como os outros (sem o
+    destaque colorido) e o dia de hoje sai sem o contorno âmbar: a imagem não
+    marca mais nada de "atual". Na tela "Imagem pronta" saiu a linha com a
+    versão do site e o tamanho dos quadros.
   v128: PRINT (imagem): (1) o contorno em volta do mês atual/selecionado não
     aparece mais na imagem. (2) voltaram os botões Salvar PNG e Salvar PDF
     também no celular (o arquivo abre numa janela à parte, sem mexer no
@@ -1528,9 +1532,8 @@ html.imprimindo #calendars{ padding:32px !important; box-sizing:content-box; }
 html.imprimindo .month::after{ display:none !important; }
 html.imprimindo .month.mes-atual, html.imprimindo .month.mes-selecionado{ border-color:transparent !important; }
 html.imprimindo .month.mes-atual h3,
-html.imprimindo .month.mes-selecionado h3{ box-shadow:none !important; }
-html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; position:relative; }
-html.imprimindo table.dowtable td.hoje::after{ content:""; position:absolute; left:0; top:0; right:0; bottom:0; border:2px solid #ffb020; border-radius:4px; box-sizing:border-box; }
+html.imprimindo .month.mes-selecionado h3{ background:var(--header) !important; color:#fff !important; box-shadow:none !important; letter-spacing:1px !important; }
+html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; font-weight:700 !important; }
 /* Tela que cobre o site enquanto a imagem é gerada (a página troca de layout por baixo) */
 #gerandoImagem{ position:fixed; inset:0; z-index:5000; background:#1e1e1e; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#e8eef5; font-size:16px; font-weight:600; }
 #gerandoImagem.show{ display:flex; }
@@ -1635,7 +1638,6 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       <button type="button" class="modal-btn-secondary" id="printClose">Fechar</button>
     </div>
     <p class="print-status" id="printStatus" role="status"></p>
-    <p class="print-versao" id="printVersao"></p>
   </div>
 </div>
 
@@ -2055,7 +2057,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 128;
+const VERSAO_SITE = 129;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3272,7 +3274,6 @@ function abrirModalPrint(blob){
   document.getElementById('printSavePng').hidden = false;
   document.getElementById('printSavePdf').hidden = !temPdf;
   document.getElementById('printDicaSalvar').hidden = !celular;
-  document.getElementById('printVersao').textContent = 'Versão do site: ' + VERSAO_SITE + (diagPrint ? ' · ' + diagPrint : '');
   printOverlay.classList.add('show');
 }
 document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
