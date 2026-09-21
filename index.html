@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 131
+  VERSÃO ATUAL: 132
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v132: janela ESCALA: os textos "Regime" e "Primeiro dia de serviço" eram
+    rótulos ligados aos campos e ocupavam a linha inteira, então tocar perto
+    do campo (no rótulo) abria o menu/calendário. Agora os rótulos não são
+    mais clicáveis, ocupam só o tamanho do texto e o toque só vale dentro do
+    próprio campo.
   v131: janela ESCALA: tocar fora do menu de regimes só FECHA o menu e não
     "atravessa" para o campo da data (que abria o calendário sozinho), e o
     contrário também: logo depois de fechar o calendário da data, o toque não
@@ -1517,7 +1522,7 @@ html.tem-barra .calendars{ margin-bottom:110px; }
 @media print{ #barraSel{ display:none !important; } }
 @media (prefers-reduced-motion:reduce){ #barraSel{ animation:none; } }
 /* ===== Modal Escala de serviço ===== */
-.modal-label{ display:block; font-size:12px; font-weight:700; color:#aab6c3; margin:0 0 6px; letter-spacing:.02em; }
+.modal-label{ display:block; width:fit-content; max-width:100%; pointer-events:none; user-select:none; -webkit-user-select:none; font-size:12px; font-weight:700; color:#aab6c3; margin:0 0 6px; letter-spacing:.02em; }
 #escalaInicio{ color-scheme:dark; height:40px; min-height:0; margin:0; padding:0 10px; font-size:14px;
   display:block; width:100%; min-width:0; max-width:100%; box-sizing:border-box;
   -webkit-appearance:none; appearance:none; text-align:left; line-height:38px; }
@@ -1654,16 +1659,16 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
     <div class="modal-icon info">&#128197;</div>
     <h3 class="modal-title">Escala de serviço</h3>
     <p class="modal-msg">Escolha o seu regime e o primeiro dia de serviço. O calendário de SERVIÇO do ano exibido é preenchido automaticamente em azul.</p>
-    <label class="modal-label" for="escalaPickerBtn">Regime</label>
+    <div class="modal-label" id="escalaLblRegime">Regime</div>
     <div class="year-picker escala-picker" id="escalaPicker">
-      <button type="button" class="year-picker-btn" id="escalaPickerBtn" aria-haspopup="listbox" aria-expanded="false">
+      <button type="button" class="year-picker-btn" id="escalaPickerBtn" aria-label="Regime" aria-haspopup="listbox" aria-expanded="false">
         <span id="escalaPickerLabel"></span>
         <svg class="year-picker-caret" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="year-picker-menu" id="escalaPickerMenu" role="listbox"></div>
     </div>
-    <label class="modal-label" for="escalaInicio">Primeiro dia de serviço</label>
-    <div class="escala-data-wrap vazio" id="escalaDataWrap"><input type="date" class="modal-input" id="escalaInicio"><span class="escala-data-ph">Toque para escolher</span></div>
+    <div class="modal-label" id="escalaLblInicio">Primeiro dia de serviço</div>
+    <div class="escala-data-wrap vazio" id="escalaDataWrap"><input type="date" class="modal-input" id="escalaInicio" aria-label="Primeiro dia de serviço"><span class="escala-data-ph">Toque para escolher</span></div>
     <p class="escala-obs" id="escalaObs"></p>
     <p class="escala-previa" id="escalaPrevia" aria-live="polite"></p>
     <div class="modal-actions">
@@ -2065,7 +2070,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 131;
+const VERSAO_SITE = 132;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
