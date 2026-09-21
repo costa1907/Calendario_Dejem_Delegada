@@ -1,9 +1,19 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 119
+  VERSÃO ATUAL: 121
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v121: PRINT (imagem): as bordas ficavam coladas na beirada da imagem, então
+    os quadros de valores (DELEGADA e DEJEM, com o Total) saíam cortados no
+    lado direito e embaixo, e o SERVIÇO cortado à esquerda. A imagem agora tem
+    uma margem de respiro em volta de tudo.
+  v120: no app do iPhone, o PRINT deixava a imagem no "histórico" do app (ao
+    arrastar da borda direita para a esquerda aparecia o print). Vinha do
+    download por link, que no iPhone abre a imagem dentro do app. Agora, onde
+    existe compartilhamento (iPhone/Android), não há mais download por link: o
+    botão Compartilhar já tem "Salvar imagem" / "Salvar em Arquivos". Os
+    botões Salvar PNG/PDF só aparecem no computador.
   v119: com qualquer janela aberta (ESCALA, PRINT, valores, sincronizar, avisos),
     arrastar o dedo/rolar não move mais o site que está atrás. Só rola o
     conteúdo da própria janela quando ela é maior que a tela.
@@ -1485,6 +1495,7 @@ html.tem-barra .calendars{ margin-bottom:110px; }
 #escalaPicker .year-picker-item{ padding:9px 12px; font-size:14px; }
 .escala-dica{ margin:8px 0 0; padding:10px 14px; border-radius:8px; background:#141a20; border:1px solid #2a3a48; color:#b9cadb; font-size:13px; line-height:1.45; text-align:center; }
 /* ===== Ao gerar o PNG (html2canvas não desenha bem brilho neon nem sombra interna) ===== */
+html.imprimindo #calendars{ padding:32px !important; box-sizing:content-box; }
 html.imprimindo .month::after{ display:none !important; }
 html.imprimindo .month.mes-atual h3,
 html.imprimindo .month.mes-selecionado h3{ box-shadow:none !important; }
@@ -1576,6 +1587,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
     <h3 class="modal-title">Imagem pronta</h3>
     <img id="printPreview" class="print-preview" alt="Prévia do calendário">
     <p class="modal-msg print-dica">Para o WhatsApp não perder qualidade, envie como <b>PDF</b>: ele não comprime documentos. Enviar como imagem é mais rápido, mas o WhatsApp reduz a qualidade das fotos.</p>
+    <p class="modal-msg print-dica" id="printDicaSalvar" hidden>Para guardar no aparelho, toque em Compartilhar e escolha <b>Salvar imagem</b> ou <b>Salvar em Arquivos</b>.</p>
     <div class="print-acoes">
       <button type="button" class="modal-btn-primary" id="printShareImg">Compartilhar imagem</button>
       <button type="button" class="modal-btn-primary" id="printSharePdf">Compartilhar como PDF (sem perder qualidade)</button>
@@ -2003,7 +2015,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 119;
+const VERSAO_SITE = 121;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3084,8 +3096,13 @@ async function capturarCalendarios(alvo){
   // é preciso mandar o html2canvas capturar a largura/altura TOTAL do
   // conteúdo (scrollWidth/scrollHeight), não só o que está visível na janela.
   // Sem isso, a imagem sai cortada antes da coluna de valores no fim.
-  const larguraTotal = alvo.scrollWidth;
-  const alturaTotal = alvo.scrollHeight;
+  // scrollWidth não conta a margem da direita/de baixo quando o conteúdo passa da caixa,
+  // então mede até onde o último quadro realmente vai e soma a margem do respiro (32px)
+  const ar = alvo.getBoundingClientRect();
+  let maxD = 0, maxB = 0;
+  Array.from(alvo.children).forEach(c => { const r = c.getBoundingClientRect(); maxD = Math.max(maxD, r.right - ar.left); maxB = Math.max(maxB, r.bottom - ar.top); });
+  const larguraTotal = Math.ceil(Math.max(alvo.scrollWidth, maxD + 32));
+  const alturaTotal = Math.ceil(Math.max(alvo.scrollHeight, maxB + 32));
   // Celulares têm limite de tamanho de canvas: reduz a escala se a imagem
   // final passaria de ~16 milhões de pixels.
   const escala = (larguraTotal * alturaTotal * 9 > 16000000) ? 2 : 3;
@@ -3148,7 +3165,12 @@ function abrirModalPrint(blob){
   const temPdf = !!(window.jspdf && window.jspdf.jsPDF);
   document.getElementById('printShareImg').hidden = !podeCompartilhar(arqImg);
   document.getElementById('printSharePdf').hidden = !(temPdf && podeCompartilhar(arqPdf));
-  document.getElementById('printSavePdf').hidden = !temPdf;
+  // onde há compartilhamento (celular) o download por link abriria a imagem dentro do app e
+  // sujaria o histórico dele: lá o salvar é feito pelo próprio Compartilhar
+  const celular = podeCompartilhar(arqImg);
+  document.getElementById('printSavePng').hidden = celular;
+  document.getElementById('printSavePdf').hidden = celular || !temPdf;
+  document.getElementById('printDicaSalvar').hidden = !celular;
   printOverlay.classList.add('show');
 }
 document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
