@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 133
+  VERSÃO ATUAL: 134
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v134: janela ESCALA: o campo "Primeiro dia de serviço" agora solta o foco
+    no mesmo instante que o campo "Regime": qualquer toque fora dele (ou a
+    escolha da data) tira o foco na hora, e a pausa depois de fechar o menu
+    de regimes foi eliminada.
   v133: janela ESCALA: o campo "Primeiro dia de serviço" solta o foco na hora
     (antes o menu de regimes ficava bloqueado por quase meio segundo depois de
     mexer na data). O nome do regime agora é "12x24 | 12x48" (barra em pé).
@@ -2073,7 +2077,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 133;
+const VERSAO_SITE = 134;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2975,7 +2979,7 @@ function fecharEscalaPicker(){
   escalaPickerMenu.classList.remove('show'); escalaPicker.classList.remove('open'); escalaPickerBtn.setAttribute('aria-expanded','false');
   // só devolve o toque ao campo da data depois que o mesmo toque terminou de "atravessar"
   clearTimeout(escalaLiberaData);
-  escalaLiberaData = setTimeout(() => { escalaDataWrap.style.pointerEvents = ''; }, 120);
+  escalaLiberaData = setTimeout(() => { escalaDataWrap.style.pointerEvents = ''; }, 0);
 }
 escalaPickerBtn.addEventListener('click', e => {
   e.stopPropagation();
@@ -3035,6 +3039,8 @@ document.getElementById('escalaBtn').addEventListener('click', abrirModalEscala)
 document.getElementById('escalaCancelBtn').addEventListener('click', fecharModalEscala);
 escalaOverlay.addEventListener('click', e => { if(e.target === escalaOverlay) fecharModalEscala(); });
 document.addEventListener('click', e => { if(!escalaPicker.contains(e.target)) fecharEscalaPicker(); });
+document.addEventListener('pointerdown', e => { if(document.activeElement === escalaInicio && e.target !== escalaInicio) escalaInicio.blur(); }, true);
+escalaInicio.addEventListener('change', () => { setTimeout(() => escalaInicio.blur(), 0); });
 escalaInicio.addEventListener('input', atualizarPreviaEscala);
 escalaInicio.addEventListener('change', atualizarPreviaEscala);
 escalaAplicarBtn.addEventListener('click', () => {
