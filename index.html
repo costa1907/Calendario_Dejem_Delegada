@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 146
+  VERSÃO ATUAL: 147
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v147: dois ajustes no aviso de letra maiúscula (SINCRONIZAR): (1) ele
+    olhava se a senha inteira tinha alguma letra maiúscula em qualquer
+    posição, então depois de digitar uma vez não apagava mais mesmo digitando
+    só minúsculas depois. Agora ele olha só pra ÚLTIMA letra digitada: acende
+    com maiúscula, apaga com minúscula, na hora. (2) o texto voltou a ser
+    "Caps Lock ligado", que é como esse aviso é conhecido em qualquer canto.
   v146: o aviso de letra maiúscula na senha voltou, mas de um jeito
     diferente: em vez de tentar adivinhar se a tecla Caps Lock está ligada
     (o que o iPhone não deixa o site saber, em campo de senha), agora ele só
@@ -1817,7 +1823,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
           <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
         </button>
       </div>
-      <div class="maiuscula-aviso" id="syncMaiusculaAviso" aria-live="polite">Tem letra maiúscula</div>
+      <div class="maiuscula-aviso" id="syncMaiusculaAviso" aria-live="polite">Caps Lock ligado</div>
       <div id="syncPassConfirmWrap" style="display:none">
         <label class="sync-label" for="syncPassConfirmInput">Confirmar senha</label>
         <div class="pass-wrap">
@@ -1827,7 +1833,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
             <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
         </div>
-        <div class="maiuscula-aviso" id="syncPassConfirmMaiuscula" aria-live="polite">Tem letra maiúscula</div>
+        <div class="maiuscula-aviso" id="syncPassConfirmMaiuscula" aria-live="polite">Caps Lock ligado</div>
       </div>
       <div class="sync-quick-status" id="syncQuickStatus" aria-live="polite"></div>
       <div class="sync-toggle-wrap"><button type="button" class="sync-toggle-modo" id="syncToggleModoBtn">Ainda não tem conta? Criar uma</button></div>
@@ -2172,7 +2178,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 146;
+const VERSAO_SITE = 147;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2548,13 +2554,17 @@ function ligarOlho(input, eye){
 ligarOlho(syncPassInput, syncPassEye);
 ligarOlho(syncPassConfirmInput, syncPassConfirmEye);
 
-// Aviso de letra maiúscula: em vez de tentar detectar a tecla Caps Lock (o
-// iPhone não deixa o site saber isso em campo de senha), olha direto pro
-// que foi digitado. Se tiver alguma letra maiúscula na senha, avisa — assim
-// dá pra perceber se não foi sem querer.
+// Aviso de Caps Lock: em vez de tentar detectar a própria tecla (o iPhone
+// não deixa o site saber isso em campo de senha), olha pra ÚLTIMA letra que
+// a pessoa digitou. Maiúscula sem querer = Caps Lock ligado (acende);
+// minúscula = desligado (apaga na hora). Não usa a senha inteira, senão o
+// aviso nunca apagaria depois da primeira maiúscula.
 function ligarAvisoMaiuscula(input, aviso){
-  input.addEventListener('input', () => {
-    aviso.classList.toggle('on', /[A-Z]/.test(input.value));
+  input.addEventListener('input', (e) => {
+    if(e.inputType !== 'insertText' || typeof e.data !== 'string' || e.data.length !== 1) return;
+    const c = e.data;
+    if(!/[a-zA-Z]/.test(c)) return;
+    aviso.classList.toggle('on', c === c.toUpperCase() && c !== c.toLowerCase());
   });
 }
 ligarAvisoMaiuscula(syncPassInput, document.getElementById('syncMaiusculaAviso'));
