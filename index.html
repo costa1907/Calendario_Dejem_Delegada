@@ -1,9 +1,16 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 150
+  VERSÃO ATUAL: 151
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v151: três ajustes internos, sem mudança visível no dia a dia: (1) o site
+    não recarrega mais sozinho pra pegar uma versão nova bem no momento em
+    que uma pintura/apagada ainda está subindo pro servidor — evita perder
+    essa alteração se a internet estiver lenta. (2) importar um arquivo
+    antigo (IMPORTAR) agora passa pela mesma atualização de formato que o
+    resto do site já usa. (3) limpeza de código que sobrou da correção do
+    neon do mês (v149/v150) e não fazia mais nada.
   v150: corrigido de vez o bug do neon do mês (v149 só resolveu pela
     metade): com o neon do mês aceso no SERVIÇO, tocar num dia fazia
     aparecer o aviso de que o MÊS INTEIRO estava selecionado pra
@@ -1115,10 +1122,6 @@
   /* dia de hoje: anel âmbar (aparece por cima de qualquer cor) */
   table.dowtable td.hoje{ box-shadow:inset 0 0 0 2px #ffb020; font-weight:900; }
   table.dowtable td.selected{ outline:2px solid #fff; outline-offset:-2px; }
-  /* Dias de um mês inteiramente selecionado (contorno azul ao redor do card)
-     não aceitam clique individual — evita marcar/desmarcar um dia sozinho
-     por engano e, ao aplicar uma cor, pintar o mês inteiro sem querer. */
-  table.dowtable td.bloqueado{ cursor:default; }
 
 
   /* ===== Feedback de toque (celular): efeito de "pressionar" e de clique ===== */
@@ -1128,7 +1131,7 @@
   .tabs button:active{ transform:scale(0.95); }
   .tabs button{ transition:background 0.15s ease, color 0.15s ease, transform 0.1s ease; }
   table.dowtable td{ transition:transform 0.1s ease, background 0.12s ease; }
-  table.dowtable td:not(.empty):not(.bloqueado):active{ transform:scale(0.85); }
+  table.dowtable td:not(.empty):active{ transform:scale(0.85); }
   table.dowtable td.pop{ animation:diaPop 0.28s cubic-bezier(0.2,0.8,0.2,1); }
   @keyframes diaPop{
     0%{ transform:scale(0.8); }
@@ -2198,7 +2201,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 150;
+const VERSAO_SITE = 151;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2397,12 +2400,15 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', ressincronizar);
 /* Auto-atualização: o app da tela de início não tem "puxar para atualizar" */
 let _verificandoVersao = false;
-// não recarrega no meio de uma ação: dias selecionados, confirmação pendente ou janela aberta
+// não recarrega no meio de uma ação: dias selecionados, confirmação pendente,
+// janela aberta ou uma alteração ainda não confirmada no servidor (senão o
+// reload pode descartar uma pintura/apagada que ainda não terminou de subir)
 function usuarioOcupado(){
   try{
     if(selection.size > 0) return true;
     if(typeof barraPendente !== 'undefined' && barraPendente !== null) return true;
     if(document.querySelector('.modal-overlay.show')) return true;
+    if(typeof syncPendente !== 'undefined' && syncPendente) return true;
   }catch(e){}
   return false;
 }
@@ -2944,37 +2950,12 @@ function corPermitidaNoCalendario(color, calKey){
 }
 
 // O neon (clique no título do mês) não mexe mais em `selection` — é
-// puramente visual (ver neonServicoLigado em render()). Por isso não há
-// mais "meses inteiros" dentro da seleção pra excluir da pintura: qualquer
+// puramente visual (ver neonServicoLigado em render()). Por isso qualquer
 // dia em `selection` foi marcado um a um pela própria pessoa e pode ser
-// pintado/apagado normalmente. Mantida como função (sempre vazia) só pra
-// não precisar mexer em quem já chama ela.
-function chavesMesesInteirosSelecionados(){
-  return new Set();
-}
-
-function selecaoEhMesInteiro(){
-  if(selection.size === 0) return false;
-  const partes = Array.from(selection).map(k => k.split('|'));
-  const calKey = partes[0][0];
-  if(calKey !== 'servico') return false;
-  if(!partes.every(p => p[0] === calKey)) return false;
-  const ano = partes[0][1];
-  if(!partes.every(p => p[1] === ano)) return false;
-  const mesesDistintos = new Set(partes.map(p => p[2].slice(0, 7)));
-  if(mesesDistintos.size !== 1) return false;
-  const [anoNum, mesNum] = partes[0][2].split('-').map(Number);
-  const diasNoMes = new Date(anoNum, mesNum, 0).getDate();
-  return selection.size === diasNoMes;
-}
-
+// pintado/apagado normalmente, sem precisar filtrar "meses inteiros".
 function applyColorToSelection(color){
   if(selection.size === 0) return;
-  // Meses inteiros selecionados (neon) servem só pra destacar — NUNCA são
-  // pintados nem apagados por uma cor/Apagar da paleta e continuam ligados
-  // depois. Cores e Apagar só agem nos dias que você tocou um a um.
-  const meses = chavesMesesInteirosSelecionados();
-  const alvo = Array.from(selection).filter(k => !meses.has(k));
+  const alvo = Array.from(selection);
   if(alvo.length === 0) return;
   let bloqueados = 0;
   const calendariosBloqueados = new Set();
@@ -2988,7 +2969,6 @@ function applyColorToSelection(color){
     setColorFor(calKey, year, dateStr, color || null);
   });
   selection.clear();
-  meses.forEach(k => selection.add(k));
   saveData();
   render();
   if(bloqueados > 0){
@@ -3017,8 +2997,7 @@ function barraAgendar(){
   queueMicrotask(() => { barraAgendado = false; try{ atualizarBarra(); }catch(e){} });
 }
 function barraAlvo(){
-  const meses = chavesMesesInteirosSelecionados();
-  return Array.from(selection).filter(k => !meses.has(k));
+  return Array.from(selection);
 }
 function barraResumo(alvo){
   const grupos = {};
@@ -3096,8 +3075,7 @@ document.getElementById('barraSel').addEventListener('click', e => {
   if(!b) return;
   const a = b.dataset.bs;
   if(a === 'limpar'){
-    const manter = chavesMesesInteirosSelecionados();
-    Array.from(selection).forEach(k => { if(!manter.has(k)) selection.delete(k); });
+    selection.clear();
     document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
   } else if(a === 'cancelar'){
     barraPendente = null; atualizarBarra();
@@ -3124,11 +3102,8 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && barraPenden
     ini = null;
     if(moveu) return;                                    // arrastar/rolar não conta
     if(selection.size === 0) return;
-    if(e.target.closest && e.target.closest('td[data-date]:not(.bloqueado), .swatch, .month h3.clicavel, #barraSel')) return;
-    // limpa só os DIAS soltos; os meses inteiros ligados (neon) só desligam
-    // quando se clica no título do próprio mês. Não precisa redesenhar tudo.
-    const manter = chavesMesesInteirosSelecionados();
-    Array.from(selection).forEach(k => { if(!manter.has(k)) selection.delete(k); });
+    if(e.target.closest && e.target.closest('td[data-date], .swatch, .month h3.clicavel, #barraSel')) return;
+    selection.clear();
     document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
   }, true);
 })();
@@ -3604,7 +3579,7 @@ document.getElementById('importFile').addEventListener('change', (e) => {
   reader.onload = () => {
     try{
       const imported = JSON.parse(reader.result);
-      data = imported;
+      data = migrateData(imported);
       refreshYearsFromData();
       if(!YEARS.includes(currentYear)) currentYear = YEARS[YEARS.length - 1];
       popularYearSelect();
