@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 139
+  VERSÃO ATUAL: 140
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v140: tela SINCRONIZAR ganhou a opção "Criar conta", para outras pessoas
+    usarem o site com o próprio login (cada conta só vê e sincroniza os
+    próprios dados, isolados pela regra do Firestore). Um link alterna entre
+    "Entrar" e "Criar conta" na mesma janela, com confirmação de senha ao
+    criar.
   v139: tirado o botão "Forçar sincronização agora" da tela SINCRONIZAR (ficava
     feio). A verificação automática que reconecta a sincronização sozinha
     (criada na v138) continua funcionando do mesmo jeito, só sem o botão.
@@ -1336,6 +1341,12 @@
   .caps-aviso::before{ content:""; width:8px; height:8px; border-radius:50%; background:#ffb020; box-shadow:0 0 6px #ffb020; flex:0 0 auto; }
   .caps-aviso.on{ visibility:visible; }
   .sync-label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 6px; }
+  .sync-toggle-modo{
+    display:block; width:100%; background:none; border:none; padding:6px 0 2px;
+    color:var(--azul); font-size:13px; font-weight:600; text-align:center;
+    text-decoration:underline; text-underline-offset:2px; cursor:pointer; font-family:inherit;
+  }
+  .sync-toggle-modo:hover{ filter:brightness(1.15); }
   .modal-btn-danger{ background:transparent; color:#ff6b6b; border:1px solid #5a2a2a !important; margin-right:auto; }
   .modal-btn-danger:hover{ background:rgba(255,0,0,0.12); }
 
@@ -1756,6 +1767,11 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
         </button>
       </div>
       <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
+      <div id="syncPassConfirmWrap" style="display:none">
+        <label class="sync-label" for="syncPassConfirmInput">Confirmar senha</label>
+        <input type="password" class="modal-input" id="syncPassConfirmInput" placeholder="repita a senha" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+      </div>
+      <button type="button" class="sync-toggle-modo" id="syncToggleModoBtn">Ainda não tem conta? Criar uma</button>
     </div>
     <div class="sync-status" id="syncModalStatus"></div>
     <div class="modal-actions">
@@ -2081,7 +2097,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 139;
+const VERSAO_SITE = 140;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2108,6 +2124,9 @@ function traduzErroSync(err){
   const c = (err && err.code) || '';
   if(c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-login-credentials') return 'E-mail ou senha incorretos.';
   if(c === 'auth/invalid-email') return 'E-mail inválido.';
+  if(c === 'auth/email-already-in-use') return 'Esse e-mail já tem uma conta. Toque em "Já tem conta? Entrar".';
+  if(c === 'auth/weak-password') return 'A senha precisa ter pelo menos 6 caracteres.';
+  if(c === 'auth/operation-not-allowed') return 'Criar conta por e-mail/senha ainda não foi ativado no Firebase (Authentication > Sign-in method).';
   if(c === 'auth/too-many-requests') return 'Muitas tentativas. Espere um pouco e tente de novo.';
   if(c === 'auth/network-request-failed') return 'Sem conexão com a internet.';
   if(c === 'permission-denied') return 'Sem permissão: confira as regras de segurança do Firestore.';
@@ -2311,6 +2330,8 @@ window.addEventListener('pageshow', (e) => { if(e.persisted) ressincronizar(); }
 const syncModalOverlay = document.getElementById('syncModalOverlay');
 const syncEmailInput = document.getElementById('syncEmailInput');
 const syncPassInput = document.getElementById('syncPassInput');
+const syncPassConfirmInput = document.getElementById('syncPassConfirmInput');
+let syncModoCriarConta = false;
 function atualizarModalSync(){
   const st = document.getElementById('syncModalStatus');
   if(!st) return;
@@ -2320,7 +2341,14 @@ function atualizarModalSync(){
   document.getElementById('syncSaveBtn').style.display = logado ? 'none' : '';
   document.getElementById('syncModalMsg').textContent = logado
     ? 'Conectado como ' + (syncUser.email || 'sua conta') + '. Tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real, sem precisar fazer nada.'
-    : 'Entre com o seu e-mail e senha do Firebase. Isso é feito uma vez por aparelho: depois, tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real. Conecte primeiro o aparelho que tem os dados mais atualizados.';
+    : syncModoCriarConta
+      ? 'Crie uma conta com e-mail e senha para ter o seu próprio calendário, separado do de qualquer outra pessoa. Depois, use esse mesmo login nos seus outros aparelhos para sincronizar.'
+      : 'Entre com o seu e-mail e senha do Firebase. Isso é feito uma vez por aparelho: depois, tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real. Conecte primeiro o aparelho que tem os dados mais atualizados.';
+  document.getElementById('syncPassConfirmWrap').style.display = (!logado && syncModoCriarConta) ? '' : 'none';
+  document.getElementById('syncToggleModoBtn').style.display = logado ? 'none' : '';
+  document.getElementById('syncToggleModoBtn').textContent = syncModoCriarConta ? 'Já tem conta? Entrar' : 'Ainda não tem conta? Criar uma';
+  document.getElementById('syncSaveBtn').textContent = syncModoCriarConta ? 'Criar conta' : 'Entrar';
+  syncPassInput.setAttribute('autocomplete', syncModoCriarConta ? 'new-password' : 'current-password');
   let texto = '';
   if(!window.SyncBackend){
     texto = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey)
@@ -2341,16 +2369,24 @@ function atualizarModalSync(){
     '\nÚltima alteração na nuvem: ' + fmt(syncNuvemUpdatedAt);
 }
 function abrirModalSync(){
+  syncModoCriarConta = false;
   atualizarModalSync();
   syncModalOverlay.classList.add('show');
 }
 function fecharModalSync(){
   syncModalOverlay.classList.remove('show');
   syncPassInput.value = '';
+  syncPassConfirmInput.value = '';
   syncCapsAviso.classList.remove('on');
   syncPassInput.type = 'password';
   const eye = document.getElementById('syncPassEye'); if(eye){ eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Mostrar senha'); }
 }
+document.getElementById('syncToggleModoBtn').addEventListener('click', () => {
+  syncModoCriarConta = !syncModoCriarConta;
+  syncPassInput.value = '';
+  syncPassConfirmInput.value = '';
+  atualizarModalSync();
+});
 document.getElementById('syncBtn').addEventListener('click', abrirModalSync);
 document.getElementById('syncCancelBtn').addEventListener('click', fecharModalSync);
 syncModalOverlay.addEventListener('click', (e) => { if(e.target === syncModalOverlay) fecharModalSync(); });
@@ -2359,10 +2395,16 @@ async function entrarSync(){
   const email = syncEmailInput.value.trim();
   const senha = syncPassInput.value;
   if(!email || !senha){ syncMostrar('erro', 'Preencha o e-mail e a senha.'); return; }
+  if(syncModoCriarConta){
+    if(senha.length < 6){ syncMostrar('erro', 'A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if(senha !== syncPassConfirmInput.value){ syncMostrar('erro', 'As senhas não coincidem.'); return; }
+  }
   syncMostrar('sync');
   try{
-    await syncBackend.login(email, senha);
+    if(syncModoCriarConta) await syncBackend.signup(email, senha);
+    else await syncBackend.login(email, senha);
     syncPassInput.value = '';
+    syncPassConfirmInput.value = '';
     setTimeout(fecharModalSync, 900);
   }catch(err){
     syncMostrar('erro', traduzErroSync(err));
@@ -2370,6 +2412,7 @@ async function entrarSync(){
 }
 document.getElementById('syncSaveBtn').addEventListener('click', entrarSync);
 syncPassInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') entrarSync(); });
+syncPassConfirmInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') entrarSync(); });
 // olho para mostrar/ocultar a senha + aviso de Caps Lock
 const syncPassEye = document.getElementById('syncPassEye');
 const syncCapsAviso = document.getElementById('syncCapsAviso');
@@ -3555,7 +3598,7 @@ requestAnimationFrame(() => rolarParaMesAtual());
      configurado, o site continua funcionando só local. -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const cfg = window.FIREBASE_CONFIG;
@@ -3578,6 +3621,7 @@ if(!cfg || !cfg.apiKey){
   window.SyncBackend = {
     onUser(cb){ onAuthStateChanged(auth, cb); },
     login(email, senha){ return signInWithEmailAndPassword(auth, email, senha).then(() => {}); },
+    signup(email, senha){ return createUserWithEmailAndPassword(auth, email, senha).then(() => {}); },
     logout(){ return signOut(auth); },
     subscribe(onDoc, onErr){
       if(cancelar){ cancelar(); cancelar = null; }
