@@ -1,9 +1,17 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 141
+  VERSÃO ATUAL: 142
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v142: (1) sem estar logado, o site só mostra o ano atual (antes ainda
+    aparecia o ano anterior/seguinte). (2) sem estar logado, tentar pintar/
+    apagar um dia, criar um ano, usar ESCALA, IMPORTAR ou EDITAR VALORES
+    mostra um aviso pedindo pra criar conta em SINCRONIZAR, em vez de deixar
+    fazer (esses dados ficariam perdidos ao trocar de aparelho ou sair da
+    conta). (3) tela "Criar conta": o campo Confirmar senha ficou com o
+    mesmo tamanho/espaçamento dos outros, ganhou o olho de mostrar senha e
+    o aviso de Caps Lock passou a valer nos dois campos de senha.
   v141: tela SINCRONIZAR (Criar conta): (1) o link "Ainda não tem conta?
     Criar uma" só responde ao toque em cima do próprio texto azul, não mais
     na faixa inteira ao lado. (2) a mensagem rápida (ex: "Sincronizando...")
@@ -1331,7 +1339,7 @@
   }
   .sync-status{ font-size:12px; color:var(--muted); min-height:16px; margin:-6px 0 14px; }
   .sync-status.erro{ color:#ff6b6b; }
-  .pass-wrap{ position:relative; margin:0 0 6px; }
+  .pass-wrap{ position:relative; margin:0 0 20px; }
   .pass-wrap .modal-input{ padding-right:44px; margin:0; }
   .pass-eye{
     position:absolute; right:4px; top:50%; transform:translateY(-50%);
@@ -1346,7 +1354,7 @@
   .pass-eye[aria-pressed="true"] .eye-off{ display:block; }
   @media (hover:hover){ .pass-eye:hover{ color:#fff; background:rgba(255,255,255,0.08); } }
   /* altura fixa reservada: o aviso só aparece/some (visibility), sem mexer no layout */
-  .caps-aviso{ height:18px; margin:0 0 14px; font-size:12px; font-weight:700; color:#ffb020; display:flex; align-items:center; gap:6px; visibility:hidden; }
+  .caps-aviso{ height:18px; margin:0 0 20px; font-size:12px; font-weight:700; color:#ffb020; display:flex; align-items:center; gap:6px; visibility:hidden; }
   .caps-aviso::before{ content:""; width:8px; height:8px; border-radius:50%; background:#ffb020; box-shadow:0 0 6px #ffb020; flex:0 0 auto; }
   .caps-aviso.on{ visibility:visible; }
   .sync-label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 6px; }
@@ -1784,7 +1792,13 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       </div>
       <div id="syncPassConfirmWrap" style="display:none">
         <label class="sync-label" for="syncPassConfirmInput">Confirmar senha</label>
-        <input type="password" class="modal-input" id="syncPassConfirmInput" placeholder="repita a senha" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+        <div class="pass-wrap">
+          <input type="password" class="modal-input" id="syncPassConfirmInput" placeholder="repita a senha" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+          <button type="button" class="pass-eye" id="syncPassConfirmEye" aria-label="Mostrar senha" aria-pressed="false">
+            <svg class="eye-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
       </div>
       <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
       <div class="sync-quick-status" id="syncQuickStatus" aria-live="polite"></div>
@@ -1962,10 +1976,12 @@ function atualizarLegendaValores(){
     }
   });
 }
-// YEARS começa com os anos originais da planilha, mas cresce dinamicamente
-// conforme o usuário cria novos anos pelo botão "+ CRIAR ANO" (esses anos
-// ficam salvos em `data`, então são recuperados automaticamente do localStorage).
-let YEARS = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1];
+// YEARS começa só com o ano atual: sem conta, é só esse ano que a pessoa vê
+// (não dá pra criar/editar nada sem login, então não faz sentido oferecer
+// outros anos). Cresce dinamicamente conforme os dados da conta chegam da
+// nuvem, ou quando a pessoa cria novos anos pelo botão "+ CRIAR ANO" (esses
+// anos ficam salvos em `data`, então são recuperados automaticamente).
+let YEARS = [new Date().getFullYear()];
 
 // Dados originais importados da planilha Excel (cores já pintadas em cada dia).
 // Servem como estado inicial; qualquer alteração feita no navegador é salva por cima disso.
@@ -2111,10 +2127,24 @@ function gravarJSONLocal(chave, valor){
 }
 let syncBackend = null;
 let syncUser = null;
+
+// ===== Conta obrigatória para editar =====
+// Sem login, o site é só uma "vitrine" (mostra o ano atual em branco, do
+// jeito que ficaria pra qualquer pessoa nova). Qualquer tentativa de alterar
+// dados (pintar/apagar dia, criar ano, ESCALA, IMPORTAR, EDITAR VALORES)
+// pede pra criar conta em vez de aplicar, pra não perder nada ao trocar de
+// aparelho ou sair da conta depois.
+function semConta(){ return !syncUser; }
+function avisoSemConta(){
+  barraAviso('Crie uma conta em SINCRONIZAR para guardar suas marcações.', 2800);
+}
+async function avisoSemContaModal(){
+  await showAlert('Crie uma conta grátis em SINCRONIZAR (toque em SINCRONIZAR e depois em "Criar uma conta") para guardar os seus dados com segurança antes de continuar.', 'Conta necessária');
+}
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 141;
+const VERSAO_SITE = 142;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2271,7 +2301,7 @@ function limparCalendarioLocal(){
   syncUpdatedAt = 0;
   syncNuvemUpdatedAt = 0;
   try{ localStorage.removeItem(SYNC_META_KEY); }catch(e){}
-  YEARS = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1];
+  YEARS = [new Date().getFullYear()];
   currentYear = new Date().getFullYear();
   selection.clear();
   popularYearSelect();
@@ -2434,8 +2464,11 @@ function fecharModalSync(){
   syncPassConfirmInput.value = '';
   syncCapsAviso.classList.remove('on');
   syncPassInput.type = 'password';
+  syncPassConfirmInput.type = 'password';
   document.getElementById('syncQuickStatus').classList.remove('show');
-  const eye = document.getElementById('syncPassEye'); if(eye){ eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Mostrar senha'); }
+  [document.getElementById('syncPassEye'), document.getElementById('syncPassConfirmEye')].forEach(eye => {
+    if(eye){ eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Mostrar senha'); }
+  });
 }
 document.getElementById('syncToggleModoBtn').addEventListener('click', () => {
   syncModoCriarConta = !syncModoCriarConta;
@@ -2469,18 +2502,24 @@ async function entrarSync(){
 document.getElementById('syncSaveBtn').addEventListener('click', entrarSync);
 syncPassInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') entrarSync(); });
 syncPassConfirmInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') entrarSync(); });
-// olho para mostrar/ocultar a senha + aviso de Caps Lock
+// olho para mostrar/ocultar a senha (nos dois campos: senha e confirmar) +
+// aviso de Caps Lock (compartilhado, vale pra qualquer um dos dois campos)
 const syncPassEye = document.getElementById('syncPassEye');
+const syncPassConfirmEye = document.getElementById('syncPassConfirmEye');
 const syncCapsAviso = document.getElementById('syncCapsAviso');
-syncPassEye.addEventListener('click', () => {
-  const mostrar = syncPassInput.type === 'password';
-  syncPassInput.type = mostrar ? 'text' : 'password';
-  syncPassEye.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
-  syncPassEye.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
-  syncPassInput.focus();
-});
-// não tira o foco do campo ao tocar no olho (mantém o teclado aberto no celular)
-syncPassEye.addEventListener('mousedown', e => e.preventDefault());
+function ligarOlho(input, eye){
+  eye.addEventListener('click', () => {
+    const mostrar = input.type === 'password';
+    input.type = mostrar ? 'text' : 'password';
+    eye.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+    eye.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
+    input.focus();
+  });
+  // não tira o foco do campo ao tocar no olho (mantém o teclado aberto no celular)
+  eye.addEventListener('mousedown', e => e.preventDefault());
+}
+ligarOlho(syncPassInput, syncPassEye);
+ligarOlho(syncPassConfirmInput, syncPassConfirmEye);
 function atualizarCaps(e){
   if(!e || typeof e.getModifierState !== 'function') return;
   const on = e.getModifierState('CapsLock');
@@ -2621,7 +2660,17 @@ let mesAnimar = null;
 const neonDesligado = {};   // 'calendario|ano' -> true quando o neon do mês atual foi apagado com um clique
 function render(){
   _diaRender = hojeStr();
-  { const dica = document.getElementById('dicaEscala'); if(dica) dica.hidden = anoTemServico(currentYear); }
+  { const dica = document.getElementById('dicaEscala');
+    if(dica){
+      if(semConta()){
+        dica.hidden = false;
+        dica.innerHTML = 'Toque em <b>SINCRONIZAR</b> para criar uma conta e ter o seu próprio calendário.';
+      } else {
+        dica.hidden = anoTemServico(currentYear);
+        dica.innerHTML = 'Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.';
+      }
+    }
+  }
   const container = document.getElementById('calendars');
   // Como a tela é redesenhada a cada mudança, as animações do neon recomeçariam
   // do zero (e "pulariam"). Usamos um relógio global: cada redesenho começa a
@@ -2973,6 +3022,7 @@ function barraAviso(txt, ms){
   barraMsgTimer = setTimeout(() => { barraMsg = ''; atualizarBarra(); }, ms || 1800);
 }
 function pedirConfirmacao(cor, sw){
+  if(semConta()){ avisoSemConta(); return; }
   const alvo = barraAlvo();
   if(alvo.length === 0){ if(selection.size === 0) barraAviso('Toque em um ou mais dias primeiro'); return; }
   barraPendente = cor;
@@ -3156,7 +3206,10 @@ function abrirModalEscala(){
   atualizarPreviaEscala();
 }
 function fecharModalEscala(){ fecharEscalaPicker(); escalaOverlay.classList.remove('show'); }
-document.getElementById('escalaBtn').addEventListener('click', abrirModalEscala);
+document.getElementById('escalaBtn').addEventListener('click', async () => {
+  if(semConta()){ await avisoSemContaModal(); return; }
+  abrirModalEscala();
+});
 document.getElementById('escalaCancelBtn').addEventListener('click', fecharModalEscala);
 escalaOverlay.addEventListener('click', e => { if(e.target === escalaOverlay) fecharModalEscala(); });
 document.addEventListener('click', e => { if(!escalaPicker.contains(e.target)) fecharEscalaPicker(); });
@@ -3252,7 +3305,10 @@ function abrirModalValores(){
 function fecharModalValores(){
   ratesModalOverlay.classList.remove('show');
 }
-document.getElementById('editRatesBtn').addEventListener('click', abrirModalValores);
+document.getElementById('editRatesBtn').addEventListener('click', async () => {
+  if(semConta()){ await avisoSemContaModal(); return; }
+  abrirModalValores();
+});
 ratesCancelBtn.addEventListener('click', fecharModalValores);
 ratesModalOverlay.addEventListener('click', (e) => { if(e.target === ratesModalOverlay) fecharModalValores(); });
 ratesSaveBtn.addEventListener('click', async () => {
@@ -3483,7 +3539,8 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   a.download = 'calendario_dados.json';
   a.click();
 });
-document.getElementById('importBtn').addEventListener('click', () => {
+document.getElementById('importBtn').addEventListener('click', async () => {
+  if(semConta()){ await avisoSemContaModal(); return; }
   document.getElementById('importFile').click();
 });
 document.getElementById('importFile').addEventListener('change', (e) => {
@@ -3609,6 +3666,7 @@ yearPicker.addEventListener('mouseenter', () => {
 });
 
 document.getElementById('addYearBtn').addEventListener('click', async () => {
+  if(semConta()){ await avisoSemContaModal(); return; }
   const maxAno = Math.max(...YEARS);
   const escSalva = lerEscala();
   const msgRegime = escSalva
