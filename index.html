@@ -1,9 +1,17 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 149
+  VERSÃO ATUAL: 150
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v150: corrigido de vez o bug do neon do mês (v149 só resolveu pela
+    metade): com o neon do mês aceso no SERVIÇO, tocar num dia fazia
+    aparecer o aviso de que o MÊS INTEIRO estava selecionado pra
+    pintar/apagar — o que nunca deveria acontecer, já que o neon é só um
+    destaque visual. A causa era o neon ainda usar a mesma lista de dias
+    selecionados (para pintar) por baixo dos panos; agora o neon é
+    totalmente independente disso — clicar no título do mês só liga/desliga
+    o contorno visual e nunca mexe nos dias marcados pra pintar/apagar.
   v149: corrigido bug em que, depois de clicar no nome do mês (acender o
     neon piscando em volta do mês inteiro) no calendário SERVIÇO, não dava
     mais pra clicar em nenhuma data daquele mês pra pintar ou apagar — os
@@ -2190,7 +2198,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 149;
+const VERSAO_SITE = 150;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2713,6 +2721,7 @@ window.addEventListener('orientationchange', agendarLayout);
 
 let mesAnimar = null;
 const neonDesligado = {};   // 'calendario|ano' -> true quando o neon do mês atual foi apagado com um clique
+const neonManualServico = {};   // 'ano|mes' -> true quando o neon de um mês (não o atual) do SERVIÇO foi ligado manualmente
 function render(){
   _diaRender = hojeStr();
   { const dica = document.getElementById('dicaEscala');
@@ -2752,23 +2761,27 @@ function render(){
 
       const weeks = buildMonthGrid(currentYear, m);
 
-      // Lista de todos os dias válidos deste mês (pra saber, antes de
-      // desenhar as células, se o mês inteiro já está selecionado).
+      // Lista de todos os dias válidos deste mês.
       const monthDates = [];
       weeks.forEach(week => week.forEach(day => {
         if(day !== null) monthDates.push(fmtDate(currentYear, m, day));
       }));
-      const mesInteiroSelecionado = cal.key === 'servico' && monthDates.length > 0 &&
-        monthDates.every(d => selection.has(cellKey(cal.key, currentYear, d)));
-      if(mesInteiroSelecionado) monthDiv.classList.add('mes-selecionado');
       // mês atual: contorno neon já aceso ao abrir (só quando o ano exibido é o atual)
       const ehMesAtual = currentYear === new Date().getFullYear() && m === new Date().getMonth();
       const chaveNeon = cal.key + '|' + currentYear;
+      const chaveMesServico = currentYear + '|' + m;
+      // O neon (contorno do mês) é PURAMENTE visual e independente dos dias
+      // marcados em `selection` pra pintar/apagar — clicar no título nunca
+      // mexe na seleção de dias. Isso evita o bug de, ao tocar num dia com o
+      // neon aceso, sobrar quase o mês inteiro marcado pra pintar sem querer.
+      const neonServicoLigado = cal.key === 'servico' &&
+        (ehMesAtual ? !neonDesligado[chaveNeon] : !!neonManualServico[chaveMesServico]);
+      if(neonServicoLigado && !ehMesAtual) monthDiv.classList.add('mes-selecionado');
       if(ehMesAtual && !neonDesligado[chaveNeon]) monthDiv.classList.add('mes-atual');
       // animação de "clique" (só no mês que acabou de ser tocado): no celular
       // não existe hover, então o efeito que o mouse mostra é tocado aqui.
       if(mesAnimar && mesAnimar.cal === cal.key && mesAnimar.m === m){
-        monthDiv.classList.add(mesInteiroSelecionado ? 'mes-anim-on' : 'mes-anim-off');
+        monthDiv.classList.add(neonServicoLigado ? 'mes-anim-on' : 'mes-anim-off');
         mesAnimar = null;
       }
 
@@ -2792,18 +2805,12 @@ function render(){
               td.style.background = COLORS[color];
               td.style.color = (color === 'verde') ? '#111' : '#fff';
             }
-            // Quando o mês inteiro está selecionado, o contorno azul ao
-            // redor do mês já mostra isso — não precisa marcar dia a dia.
-            if(!mesInteiroSelecionado && selection.has(cellKey(cal.key, currentYear, dateStr))){
+            if(selection.has(cellKey(cal.key, currentYear, dateStr))){
               td.classList.add('selected');
             }
-            // O dia continua clicável mesmo com o mês inteiro selecionado
-            // (neon aceso): a pessoa pode tocar num dia específico pra
-            // pintar/apagar ou pra tirá-lo da seleção do mês, sem precisar
-            // desligar o neon primeiro. A seleção do mês inteiro (neon)
-            // nunca é pintada pela paleta de qualquer forma — ver
-            // chavesMesesInteirosSelecionados() — então isso não corre o
-            // risco de pintar o mês inteiro por engano.
+            // O dia é sempre clicável, mesmo com o neon do mês aceso — o
+            // neon é só visual e não faz parte da seleção de dias pra
+            // pintar/apagar (ver neonServicoLigado acima).
             td.addEventListener('click', onDayClick);
           }
           tr.appendChild(td);
@@ -2813,20 +2820,20 @@ function render(){
       monthDiv.appendChild(table);
       monthsWrap.appendChild(monthDiv);
 
-      // Clicar no título do mês (SERVIÇO): liga/desliga o neon e seleciona/desmarca o
-      // mês inteiro. O mês atual já começa com o neon aceso (como se estivesse
-      // marcado): o 1º clique apaga o neon; o seguinte seleciona o mês de novo.
+      // Clicar no título do mês (SERVIÇO): liga/desliga o neon, só visual —
+      // nunca mexe nos dias selecionados pra pintar/apagar. O mês atual já
+      // começa com o neon aceso (como se estivesse marcado): o 1º clique
+      // apaga o neon; o seguinte acende de novo.
       if(cal.key === 'servico'){
         const h3 = monthDiv.querySelector('h3');
         h3.classList.add('clicavel');
         h3.addEventListener('click', () => {
           mesAnimar = {cal: cal.key, m: m};
-          const neonLigado = mesInteiroSelecionado || (ehMesAtual && !neonDesligado[chaveNeon]);
-          monthDates.forEach(d => {
-            const k = cellKey(cal.key, currentYear, d);
-            if(neonLigado) selection.delete(k); else selection.add(k);
-          });
-          if(ehMesAtual) neonDesligado[chaveNeon] = neonLigado;
+          if(ehMesAtual){
+            neonDesligado[chaveNeon] = !neonDesligado[chaveNeon];
+          } else {
+            neonManualServico[chaveMesServico] = !neonServicoLigado;
+          }
           render();
         });
       } else if(ehMesAtual){
@@ -2936,19 +2943,14 @@ function corPermitidaNoCalendario(color, calKey){
   return permitidas.includes(color);
 }
 
-// Detecta se a seleção atual é exatamente "todos os dias de um mês do
-// SERVIÇO" (a seleção criada ao clicar no título do mês). Usado pra impedir
-// que clicar numa cor da paleta pinte o mês inteiro de uma vez.
-// Chaves dos dias que pertencem a MESES INTEIROS selecionados (neon ligado pelo
-// clique no título do mês, só no SERVIÇO) no ano exibido.
+// O neon (clique no título do mês) não mexe mais em `selection` — é
+// puramente visual (ver neonServicoLigado em render()). Por isso não há
+// mais "meses inteiros" dentro da seleção pra excluir da pintura: qualquer
+// dia em `selection` foi marcado um a um pela própria pessoa e pode ser
+// pintado/apagado normalmente. Mantida como função (sempre vazia) só pra
+// não precisar mexer em quem já chama ela.
 function chavesMesesInteirosSelecionados(){
-  const out = new Set();
-  for(let m = 0; m < 12; m++){
-    const keys = [];
-    buildMonthGrid(currentYear, m).forEach(w => w.forEach(d => { if(d !== null) keys.push(cellKey('servico', currentYear, fmtDate(currentYear, m, d))); }));
-    if(keys.length && keys.every(k => selection.has(k))) keys.forEach(k => out.add(k));
-  }
-  return out;
+  return new Set();
 }
 
 function selecaoEhMesInteiro(){
