@@ -1,9 +1,16 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 148
+  VERSÃO ATUAL: 149
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v149: corrigido bug em que, depois de clicar no nome do mês (acender o
+    neon piscando em volta do mês inteiro) no calendário SERVIÇO, não dava
+    mais pra clicar em nenhuma data daquele mês pra pintar ou apagar — os
+    dias ficavam bloqueados. Agora o dia continua clicável normalmente
+    mesmo com o mês inteiro selecionado; um toque num dia específico
+    pinta/apaga ou tira só aquele dia da seleção do mês, sem precisar
+    apagar o neon primeiro.
   v148: mais dois ajustes no aviso de Caps Lock (SINCRONIZAR): (1) ao apagar
     a senha inteira, se a última letra apagada era maiúscula, o aviso ficava
     aceso à toa mesmo sem nada digitado — agora, com o campo vazio, o aviso
@@ -2183,7 +2190,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 148;
+const VERSAO_SITE = 149;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2790,15 +2797,14 @@ function render(){
             if(!mesInteiroSelecionado && selection.has(cellKey(cal.key, currentYear, dateStr))){
               td.classList.add('selected');
             }
-            // Com o mês inteiro selecionado, os dias individuais ficam
-            // bloqueados pra clique: evita que um clique duplo (ou qualquer
-            // clique) desmarque só um dia sem querer e, ao aplicar uma cor
-            // pela paleta, acabe pintando o mês inteiro por engano.
-            if(mesInteiroSelecionado){
-              td.classList.add('bloqueado');
-            } else {
-              td.addEventListener('click', onDayClick);
-            }
+            // O dia continua clicável mesmo com o mês inteiro selecionado
+            // (neon aceso): a pessoa pode tocar num dia específico pra
+            // pintar/apagar ou pra tirá-lo da seleção do mês, sem precisar
+            // desligar o neon primeiro. A seleção do mês inteiro (neon)
+            // nunca é pintada pela paleta de qualquer forma — ver
+            // chavesMesesInteirosSelecionados() — então isso não corre o
+            // risco de pintar o mês inteiro por engano.
+            td.addEventListener('click', onDayClick);
           }
           tr.appendChild(td);
         });
