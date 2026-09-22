@@ -1,9 +1,17 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 142
+  VERSÃO ATUAL: 143
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v143: (1) tirada a mensagem fixa "Toque em SINCRONIZAR..." que ficava
+    sempre visível na tela principal pra quem não tem conta; agora só aparece
+    o aviso de conta necessária no momento em que a pessoa tenta mesmo fazer
+    alguma coisa (pintar, criar ano, etc — igual já era antes). (2) o aviso
+    de Caps Lock ligado, no login/criar conta, ganhou uma checagem extra
+    (compara a letra digitada) porque no iPhone o teclado da tela não avisa
+    o site quando o Caps Lock está ligado do jeito que um teclado físico
+    avisa.
   v142: (1) sem estar logado, o site só mostra o ano atual (antes ainda
     aparecia o ano anterior/seguinte). (2) sem estar logado, tentar pintar/
     apagar um dia, criar um ano, usar ESCALA, IMPORTAR ou EDITAR VALORES
@@ -2144,7 +2152,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 142;
+const VERSAO_SITE = 143;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2521,8 +2529,19 @@ function ligarOlho(input, eye){
 ligarOlho(syncPassInput, syncPassEye);
 ligarOlho(syncPassConfirmInput, syncPassConfirmEye);
 function atualizarCaps(e){
-  if(!e || typeof e.getModifierState !== 'function') return;
-  const on = e.getModifierState('CapsLock');
+  if(!e) return;
+  let on = false;
+  if(typeof e.getModifierState === 'function'){
+    try{ on = e.getModifierState('CapsLock'); }catch(err){}
+  }
+  // No teclado da tela do iPhone o navegador quase nunca avisa o Caps Lock
+  // por getModifierState (só teclado físico avisa direito). Como pista
+  // extra, usa a própria letra digitada: se saiu maiúscula sem o Shift
+  // estar sendo segurado, é porque o Caps Lock está ligado.
+  if(!on && typeof e.key === 'string' && e.key.length === 1 && !e.shiftKey){
+    const k = e.key;
+    if(/[a-zA-Z]/.test(k) && k === k.toUpperCase() && k !== k.toLowerCase()) on = true;
+  }
   syncCapsAviso.classList.toggle('on', on);
 }
 syncPassInput.addEventListener('keydown', atualizarCaps);
@@ -2662,13 +2681,11 @@ function render(){
   _diaRender = hojeStr();
   { const dica = document.getElementById('dicaEscala');
     if(dica){
-      if(semConta()){
-        dica.hidden = false;
-        dica.innerHTML = 'Toque em <b>SINCRONIZAR</b> para criar uma conta e ter o seu próprio calendário.';
-      } else {
-        dica.hidden = anoTemServico(currentYear);
-        dica.innerHTML = 'Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.';
-      }
+      // sem conta, nenhuma dica fica fixa na tela: o aviso de "crie uma
+      // conta" só aparece no momento em que a pessoa tenta interagir de
+      // verdade (pintar um dia, criar ano, ESCALA, etc).
+      dica.hidden = semConta() || anoTemServico(currentYear);
+      dica.innerHTML = 'Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.';
     }
   }
   const container = document.getElementById('calendars');
