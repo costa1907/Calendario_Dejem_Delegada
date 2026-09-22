@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 147
+  VERSÃO ATUAL: 148
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v148: mais dois ajustes no aviso de Caps Lock (SINCRONIZAR): (1) ao apagar
+    a senha inteira, se a última letra apagada era maiúscula, o aviso ficava
+    aceso à toa mesmo sem nada digitado — agora, com o campo vazio, o aviso
+    sempre apaga. (2) o campo E-mail ganhou o mesmo aviso.
   v147: dois ajustes no aviso de letra maiúscula (SINCRONIZAR): (1) ele
     olhava se a senha inteira tinha alguma letra maiúscula em qualquer
     posição, então depois de digitar uma vez não apagava mais mesmo digitando
@@ -1815,6 +1819,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
     <div id="syncLoginFields">
       <label class="sync-label" for="syncEmailInput">E-mail</label>
       <input type="email" class="modal-input" id="syncEmailInput" placeholder="seu@email.com" autocapitalize="off" autocomplete="username" spellcheck="false">
+      <div class="maiuscula-aviso" id="syncEmailMaiuscula" aria-live="polite">Caps Lock ligado</div>
       <label class="sync-label" for="syncPassInput">Senha</label>
       <div class="pass-wrap">
         <input type="password" class="modal-input" id="syncPassInput" placeholder="sua senha" autocomplete="current-password" autocapitalize="off" spellcheck="false">
@@ -2178,7 +2183,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 147;
+const VERSAO_SITE = 148;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2499,6 +2504,7 @@ function fecharModalSync(){
   syncPassInput.type = 'password';
   syncPassConfirmInput.type = 'password';
   document.getElementById('syncQuickStatus').classList.remove('show');
+  document.getElementById('syncEmailMaiuscula').classList.remove('on');
   document.getElementById('syncMaiusculaAviso').classList.remove('on');
   document.getElementById('syncPassConfirmMaiuscula').classList.remove('on');
   [document.getElementById('syncPassEye'), document.getElementById('syncPassConfirmEye')].forEach(eye => {
@@ -2561,12 +2567,14 @@ ligarOlho(syncPassConfirmInput, syncPassConfirmEye);
 // aviso nunca apagaria depois da primeira maiúscula.
 function ligarAvisoMaiuscula(input, aviso){
   input.addEventListener('input', (e) => {
+    if(input.value.length === 0){ aviso.classList.remove('on'); return; }   // campo vazio: nunca mostra
     if(e.inputType !== 'insertText' || typeof e.data !== 'string' || e.data.length !== 1) return;
     const c = e.data;
     if(!/[a-zA-Z]/.test(c)) return;
     aviso.classList.toggle('on', c === c.toUpperCase() && c !== c.toLowerCase());
   });
 }
+ligarAvisoMaiuscula(syncEmailInput, document.getElementById('syncEmailMaiuscula'));
 ligarAvisoMaiuscula(syncPassInput, document.getElementById('syncMaiusculaAviso'));
 ligarAvisoMaiuscula(syncPassConfirmInput, document.getElementById('syncPassConfirmMaiuscula'));
 
