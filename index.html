@@ -1,9 +1,17 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 143
+  VERSÃO ATUAL: 144
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v144: corrigido o aviso de Caps Lock no iPhone: ele acendia por uma fração
+    de segundo e apagava sozinho, e depois não voltava a acender mesmo com o
+    Caps Lock ligado. A causa era o evento "soltar a tecla" (keyup) do
+    teclado da tela, que no iPhone não informa direito qual foi a letra e
+    acabava apagando o aviso por engano logo depois de acender. Agora só o
+    evento de "apertar a tecla" (keydown) decide, e só muda o aviso quando
+    dá pra saber de verdade (letra reconhecida); o resto do tempo o aviso
+    fica do jeito que estava.
   v143: (1) tirada a mensagem fixa "Toque em SINCRONIZAR..." que ficava
     sempre visível na tela principal pra quem não tem conta; agora só aparece
     o aviso de conta necessária no momento em que a pessoa tenta mesmo fazer
@@ -2152,7 +2160,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 143;
+const VERSAO_SITE = 144;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2529,20 +2537,25 @@ function ligarOlho(input, eye){
 ligarOlho(syncPassInput, syncPassEye);
 ligarOlho(syncPassConfirmInput, syncPassConfirmEye);
 function atualizarCaps(e){
-  if(!e) return;
-  let on = false;
+  // Só decide a partir de "apertar a tecla" (keydown): o "soltar a tecla"
+  // (keyup) do teclado da tela do iPhone não informa direito qual foi a
+  // letra, e mudar o aviso nessa hora era o que fazia ele apagar sozinho
+  // logo depois de acender.
+  if(!e || e.type !== 'keydown') return;
+  // Se saiu uma letra só (sem o Shift sendo segurado), ela mesma já diz se o
+  // Caps Lock está ligado (maiúscula) ou desligado (minúscula) — essa pista
+  // manda mais que o getModifierState, porque no teclado da tela do iPhone
+  // ele costuma sempre responder "desligado", mesmo com o Caps Lock ligado.
+  if(typeof e.key === 'string' && e.key.length === 1 && !e.shiftKey && /[a-zA-Z]/.test(e.key)){
+    const on = (e.key === e.key.toUpperCase() && e.key !== e.key.toLowerCase());
+    syncCapsAviso.classList.toggle('on', on);
+    return;
+  }
+  // Outras teclas (apagar, espaço, números etc.) não dizem nada sobre a
+  // letra: usa o aviso do próprio teclado, quando existir (teclado físico).
   if(typeof e.getModifierState === 'function'){
-    try{ on = e.getModifierState('CapsLock'); }catch(err){}
+    try{ syncCapsAviso.classList.toggle('on', e.getModifierState('CapsLock')); }catch(err){}
   }
-  // No teclado da tela do iPhone o navegador quase nunca avisa o Caps Lock
-  // por getModifierState (só teclado físico avisa direito). Como pista
-  // extra, usa a própria letra digitada: se saiu maiúscula sem o Shift
-  // estar sendo segurado, é porque o Caps Lock está ligado.
-  if(!on && typeof e.key === 'string' && e.key.length === 1 && !e.shiftKey){
-    const k = e.key;
-    if(/[a-zA-Z]/.test(k) && k === k.toUpperCase() && k !== k.toLowerCase()) on = true;
-  }
-  syncCapsAviso.classList.toggle('on', on);
 }
 syncPassInput.addEventListener('keydown', atualizarCaps);
 syncPassInput.addEventListener('keyup', atualizarCaps);
