@@ -1,9 +1,14 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 137
+  VERSÃO ATUAL: 138
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v138: sincronização em tempo real: agora tem uma verificação automática que
+    detecta quando a conexão com a nuvem ficou "morta" com o site aberto (sem
+    ir para segundo plano) e reconecta sozinha, sem precisar fechar e abrir o
+    app de novo. Também foi adicionado o botão "Forçar sincronização agora" na
+    tela SINCRONIZAR, para reconectar na hora quando quiser ter certeza.
   v137: no menu de anos (topo) cada ano ganhou um "×" para excluí-lo, com uma
     confirmação antes de apagar (mostra quantos dias marcados aquele ano tem).
     Não deixa excluir o último ano restante. O ano atual muda sozinho para
@@ -1220,6 +1225,8 @@
   .modal-btn-primary:hover{ filter:brightness(1.1); }
   .modal-btn-primary:disabled{ opacity:.4; cursor:default; filter:none; }
   .modal-btn-secondary{ background:#2c2c2c; color:#ddd; }
+  .sync-force-btn{ display:block; width:100%; box-sizing:border-box; margin:0 0 14px; text-align:center; }
+  .sync-force-btn:disabled{ opacity:.5; cursor:default; }
   .modal-btn-primary.danger{ background:#e5484d; color:#fff; }
   .modal-btn-primary.danger:hover{ filter:brightness(1.08); }
   .modal-btn-secondary:hover{ background:#3a3a3a; }
@@ -1750,6 +1757,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
     </div>
     <div class="sync-status" id="syncModalStatus"></div>
+    <button type="button" class="modal-btn-secondary sync-force-btn" id="syncForceBtn" style="display:none">Forçar sincronização agora</button>
     <div class="modal-actions">
       <button class="modal-btn-danger" id="syncDisconnectBtn" style="display:none">Sair da conta</button>
       <button class="modal-btn-secondary" id="syncCancelBtn">Fechar</button>
@@ -2073,7 +2081,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 137;
+const VERSAO_SITE = 138;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2179,6 +2187,7 @@ function adotarDadosRemotos(remoto){
 
 // Chamada a cada mudança do documento na nuvem (inclusive a primeira leitura).
 function receberRemoto(doc, temEscritaLocalPendente){
+  marcarAtividadeSync();
   if(temEscritaLocalPendente) return;   // é só o "eco" da nossa própria gravação
   if(!doc){
     // nuvem vazia: este aparelho sobe os dados dele
@@ -2308,6 +2317,7 @@ function atualizarModalSync(){
   const logado = !!syncUser;
   document.getElementById('syncLoginFields').style.display = logado ? 'none' : '';
   document.getElementById('syncDisconnectBtn').style.display = logado ? '' : 'none';
+  document.getElementById('syncForceBtn').style.display = logado ? '' : 'none';
   document.getElementById('syncSaveBtn').style.display = logado ? 'none' : '';
   document.getElementById('syncModalMsg').textContent = logado
     ? 'Conectado como ' + (syncUser.email || 'sua conta') + '. Tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real, sem precisar fazer nada.'
@@ -2385,6 +2395,32 @@ document.getElementById('syncDisconnectBtn').addEventListener('click', async () 
   try{ await syncBackend.logout(); }catch(e){}
   fecharModalSync();
 });
+
+// Botão "Forçar sincronização agora": reconecta a escuta em tempo real na
+// hora, sem precisar fechar e abrir o app (útil se a conexão ficou "morta"
+// com o site aberto, sem passar por segundo plano).
+const syncForceBtn = document.getElementById('syncForceBtn');
+syncForceBtn.addEventListener('click', () => {
+  if(!syncUser || !syncBackend) return;
+  syncForceBtn.disabled = true;
+  syncMostrar('sync');
+  ressincronizar();
+  setTimeout(() => { syncForceBtn.disabled = false; }, 1200);
+});
+
+// Verificação automática da conexão em tempo real: no iPhone (e em outros
+// aparelhos), a conexão com a nuvem às vezes fica "morta" mesmo com o site
+// aberto e em primeiro plano (sem disparar visibilitychange/online), e o
+// onSnapshot não avisa sozinho. A cada 30s, se fizer tempo demais desde a
+// última vez que a nuvem confirmou algo, reconecta sozinho.
+let ultimaAtividadeSync = 0;
+function marcarAtividadeSync(){ ultimaAtividadeSync = Date.now(); }
+setInterval(() => {
+  if(!syncUser || !syncBackend) return;
+  if(document.visibilityState !== 'visible') return;
+  if(ultimaAtividadeSync === 0) return; // ainda não teve a primeira confirmação
+  if(Date.now() - ultimaAtividadeSync > 45000) ressincronizar();
+}, 30000);
 
 // ---------------------------------------------------------------------------
 // LAYOUT RESPONSIVO
