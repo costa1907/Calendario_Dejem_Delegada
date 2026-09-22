@@ -1,9 +1,18 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 140
+  VERSÃO ATUAL: 141
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v141: tela SINCRONIZAR (Criar conta): (1) o link "Ainda não tem conta?
+    Criar uma" só responde ao toque em cima do próprio texto azul, não mais
+    na faixa inteira ao lado. (2) a mensagem rápida (ex: "Sincronizando...")
+    ganhou destaque verde e apareceu centralizada, logo acima do link, em vez
+    de grudada nele. (3) o campo "Confirmar senha" ficou logo depois da
+    Senha, com o mesmo espaçamento, e o aviso de Caps Lock passou para
+    depois dos dois campos. (4) ao sair da conta (Sair da conta), o
+    calendário deste aparelho volta em branco no ano atual, em vez de
+    continuar mostrando os dados da conta anterior.
   v140: tela SINCRONIZAR ganhou a opção "Criar conta", para outras pessoas
     usarem o site com o próprio login (cada conta só vê e sincroniza os
     próprios dados, isolados pela regra do Firestore). Um link alterna entre
@@ -1341,12 +1350,19 @@
   .caps-aviso::before{ content:""; width:8px; height:8px; border-radius:50%; background:#ffb020; box-shadow:0 0 6px #ffb020; flex:0 0 auto; }
   .caps-aviso.on{ visibility:visible; }
   .sync-label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 6px; }
+  .sync-toggle-wrap{ text-align:center; margin:0 0 14px; }
   .sync-toggle-modo{
-    display:block; width:100%; background:none; border:none; padding:6px 0 2px;
+    display:inline-block; width:auto; background:none; border:none; padding:4px 2px;
     color:var(--azul); font-size:13px; font-weight:600; text-align:center;
     text-decoration:underline; text-underline-offset:2px; cursor:pointer; font-family:inherit;
   }
   .sync-toggle-modo:hover{ filter:brightness(1.15); }
+  .sync-quick-status{
+    display:none; text-align:center; font-size:13px; font-weight:700;
+    color:#3ddc84; margin:0 0 14px;
+  }
+  .sync-quick-status.show{ display:block; }
+  .sync-quick-status.erro{ color:#ff6b6b; }
   .modal-btn-danger{ background:transparent; color:#ff6b6b; border:1px solid #5a2a2a !important; margin-right:auto; }
   .modal-btn-danger:hover{ background:rgba(255,0,0,0.12); }
 
@@ -1766,12 +1782,13 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
           <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
         </button>
       </div>
-      <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
       <div id="syncPassConfirmWrap" style="display:none">
         <label class="sync-label" for="syncPassConfirmInput">Confirmar senha</label>
         <input type="password" class="modal-input" id="syncPassConfirmInput" placeholder="repita a senha" autocomplete="new-password" autocapitalize="off" spellcheck="false">
       </div>
-      <button type="button" class="sync-toggle-modo" id="syncToggleModoBtn">Ainda não tem conta? Criar uma</button>
+      <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
+      <div class="sync-quick-status" id="syncQuickStatus" aria-live="polite"></div>
+      <div class="sync-toggle-wrap"><button type="button" class="sync-toggle-modo" id="syncToggleModoBtn">Ainda não tem conta? Criar uma</button></div>
     </div>
     <div class="sync-status" id="syncModalStatus"></div>
     <div class="modal-actions">
@@ -2097,7 +2114,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 140;
+const VERSAO_SITE = 141;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2240,7 +2257,30 @@ function receberRemoto(doc, temEscritaLocalPendente){
 
 function erroRemoto(err){ syncMostrar('erro', traduzErroSync(err)); }
 
+// Apaga tudo que está guardado neste aparelho (calendário, valores, regime
+// e o "relógio" da sincronização) e volta ao estado de quem nunca usou o
+// site: ano atual, tudo em branco. Usado ao sair da conta, pra não deixar
+// os dados de uma conta visíveis/misturados quando outra pessoa (ou você
+// numa conta diferente) usar o mesmo aparelho depois.
+function limparCalendarioLocal(){
+  data = {};
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  RATES = Object.assign({}, DEFAULT_RATES, { delegada: Object.assign({}, DEFAULT_RATES.delegada), dejem: Object.assign({}, DEFAULT_RATES.dejem) });
+  try{ localStorage.removeItem(RATES_STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(ESCALA_KEY); }catch(e){}
+  syncUpdatedAt = 0;
+  syncNuvemUpdatedAt = 0;
+  try{ localStorage.removeItem(SYNC_META_KEY); }catch(e){}
+  YEARS = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1];
+  currentYear = new Date().getFullYear();
+  selection.clear();
+  popularYearSelect();
+  atualizarLegendaValores();
+  render();
+  requestAnimationFrame(() => rolarParaMesAtual());
+}
 function aoMudarUsuario(user){
+  const estavaLogado = !!syncUser;
   syncUser = user || null;
   if(syncUser){
     syncMostrar('sync');
@@ -2250,6 +2290,9 @@ function aoMudarUsuario(user){
     clearTimeout(syncTimer);
     syncPendente = false;
     syncMostrar('off');
+    // só limpa quando é uma saída de verdade (estava logado e desconectou),
+    // nunca no carregamento inicial da página de quem nunca fez login
+    if(estavaLogado) limparCalendarioLocal();
   }
 }
 
@@ -2363,10 +2406,22 @@ function atualizarModalSync(){
     else if(syncEstado === 'sync') texto = 'Sincronizando...';
   }
   const fmt = t => t ? new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
-  st.style.whiteSpace = 'pre-line';
-  st.textContent = texto + '\n\nVersão do site: ' + VERSAO_SITE +
+  const infoVersao = 'Versão do site: ' + VERSAO_SITE +
     '\nÚltima alteração neste aparelho: ' + fmt(syncUpdatedAt) +
     '\nÚltima alteração na nuvem: ' + fmt(syncNuvemUpdatedAt);
+  st.style.whiteSpace = 'pre-line';
+  // Enquanto não está logado, a mensagem rápida (Sincronizando/erro) some do
+  // bloco de detalhes e ganha destaque próprio, acima do link "Criar conta".
+  const quick = document.getElementById('syncQuickStatus');
+  if(!logado){
+    quick.textContent = texto;
+    quick.classList.toggle('show', !!texto);
+    quick.classList.toggle('erro', st.classList.contains('erro'));
+    st.textContent = infoVersao;
+  } else {
+    quick.classList.remove('show');
+    st.textContent = texto + '\n\n' + infoVersao;
+  }
 }
 function abrirModalSync(){
   syncModoCriarConta = false;
@@ -2379,6 +2434,7 @@ function fecharModalSync(){
   syncPassConfirmInput.value = '';
   syncCapsAviso.classList.remove('on');
   syncPassInput.type = 'password';
+  document.getElementById('syncQuickStatus').classList.remove('show');
   const eye = document.getElementById('syncPassEye'); if(eye){ eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Mostrar senha'); }
 }
 document.getElementById('syncToggleModoBtn').addEventListener('click', () => {
@@ -2432,6 +2488,8 @@ function atualizarCaps(e){
 }
 syncPassInput.addEventListener('keydown', atualizarCaps);
 syncPassInput.addEventListener('keyup', atualizarCaps);
+syncPassConfirmInput.addEventListener('keydown', atualizarCaps);
+syncPassConfirmInput.addEventListener('keyup', atualizarCaps);
 
 document.getElementById('syncDisconnectBtn').addEventListener('click', async () => {
   try{ await syncBackend.logout(); }catch(e){}
