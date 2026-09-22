@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 136
+  VERSÃO ATUAL: 137
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v137: no menu de anos (topo) cada ano ganhou um "×" para excluí-lo, com uma
+    confirmação antes de apagar (mostra quantos dias marcados aquele ano tem).
+    Não deixa excluir o último ano restante. O ano atual muda sozinho para
+    outro da lista quando o ano exibido é o excluído.
   v136: "+ CRIAR ANO" não tenta mais adivinhar o regime antigo olhando os
     dias já pintados do ano anterior. Agora ele usa só o regime salvo em
     ESCALA; se ainda não houver um regime salvo, avisa e abre a janela de
@@ -659,14 +663,34 @@
     pointer-events:auto;
   }
   .year-picker-item{
-    padding:8px 12px;
+    padding:8px 8px 8px 12px;
     border-radius:6px;
     font-size:14px;
     font-weight:600;
     color:var(--text);
     cursor:pointer;
     transition:background 0.1s ease, color 0.1s ease, box-shadow 0.1s ease;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
   }
+  .year-picker-del{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:24px;
+    height:24px;
+    border-radius:6px;
+    color:inherit;
+    opacity:.55;
+    flex:none;
+  }
+  @media (hover:hover){
+    .year-picker-del:hover{ opacity:1; background:rgba(255,0,0,0.18); color:#ff8a8a; }
+  }
+  .year-picker-del:active{ opacity:1; background:rgba(255,0,0,0.28); color:#ff8a8a; }
+  .year-picker-item.active .year-picker-del{ color:#04202b; }
   /* hover/active só com mouse: no toque eles "grudavam" (azul claro no ano em
      que o dedo tocou ao rolar a lista) */
   @media (hover:hover){
@@ -1196,6 +1220,8 @@
   .modal-btn-primary:hover{ filter:brightness(1.1); }
   .modal-btn-primary:disabled{ opacity:.4; cursor:default; filter:none; }
   .modal-btn-secondary{ background:#2c2c2c; color:#ddd; }
+  .modal-btn-primary.danger{ background:#e5484d; color:#fff; }
+  .modal-btn-primary.danger:hover{ filter:brightness(1.08); }
   .modal-btn-secondary:hover{ background:#3a3a3a; }
 
 
@@ -1786,7 +1812,7 @@ function showAlert(message, title){
   });
 }
 
-function showConfirm(message, title){
+function showConfirm(message, title, okText, danger){
   return new Promise(resolve => {
     modalIcon.textContent = '!';
     modalIcon.className = 'modal-icon warn';
@@ -1794,13 +1820,15 @@ function showConfirm(message, title){
     modalMsg.textContent = message;
     modalInput.style.display = 'none';
     modalCancelBtn.style.display = '';
-    modalOkBtn.textContent = 'Confirmar';
+    modalOkBtn.textContent = okText || 'Confirmar';
+    modalOkBtn.classList.toggle('danger', !!danger);
     modalOverlay.classList.add('show');
     const onOk = () => { closeModal(); cleanup(); resolve(true); };
     const onCancel = () => { closeModal(); cleanup(); resolve(false); };
     function cleanup(){
       modalOkBtn.removeEventListener('click', onOk);
       modalCancelBtn.removeEventListener('click', onCancel);
+      modalOkBtn.classList.remove('danger');
     }
     modalOkBtn.addEventListener('click', onOk);
     modalCancelBtn.addEventListener('click', onCancel);
@@ -2045,7 +2073,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 136;
+const VERSAO_SITE = 137;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3368,7 +3396,9 @@ function popularYearSelect(){
     const item = document.createElement('div');
     item.className = 'year-picker-item' + (y === currentYear ? ' active' : '');
     item.setAttribute('role', 'option');
-    item.textContent = y;
+    const nome = document.createElement('span');
+    nome.textContent = y;
+    item.appendChild(nome);
     item.addEventListener('click', () => {
       currentYear = y;
       selection.clear();
@@ -3378,8 +3408,41 @@ function popularYearSelect(){
       // ano vigente: vai direto ao mês de hoje (o dia de hoje já fica destacado)
       if(y === new Date().getFullYear()) requestAnimationFrame(() => rolarParaMesAtual());
     });
+    if(YEARS.length > 1){
+      const del = document.createElement('span');
+      del.className = 'year-picker-del';
+      del.setAttribute('aria-label', 'Excluir ano ' + y);
+      del.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
+      del.addEventListener('click', (e) => { e.stopPropagation(); excluirAno(y); });
+      item.appendChild(del);
+    }
     yearPickerMenu.appendChild(item);
   });
+}
+
+// Conta quantos dias marcados (qualquer cor, nos três calendários) o ano tem.
+function contarDiasMarcados(year){
+  return Object.keys(data).filter(k => k.split('|')[1] === String(year)).length;
+}
+async function excluirAno(year){
+  if(YEARS.length <= 1) return; // sempre sobra pelo menos um ano
+  const n = contarDiasMarcados(year);
+  const aviso = n > 0
+    ? `Excluir o calendário de ${year}? Todos os ${n} dias marcados nele (SERVIÇO, DELEGADA e DEJEM) serão apagados. Essa ação não pode ser desfeita.`
+    : `Excluir o calendário de ${year}? Essa ação não pode ser desfeita.`;
+  const ok = await showConfirm(aviso, 'Excluir ano', 'Excluir', true);
+  if(!ok) return;
+  Object.keys(data).forEach(k => { if(k.split('|')[1] === String(year)) delete data[k]; });
+  YEARS = YEARS.filter(y => y !== year);
+  saveData();
+  if(currentYear === year){
+    const hoje = new Date().getFullYear();
+    currentYear = YEARS.includes(hoje) ? hoje : YEARS[YEARS.length - 1];
+  }
+  selection.clear();
+  fecharYearPicker();
+  popularYearSelect();
+  render();
 }
 
 
