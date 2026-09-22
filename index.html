@@ -1,9 +1,12 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 138
+  VERSÃO ATUAL: 139
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v139: tirado o botão "Forçar sincronização agora" da tela SINCRONIZAR (ficava
+    feio). A verificação automática que reconecta a sincronização sozinha
+    (criada na v138) continua funcionando do mesmo jeito, só sem o botão.
   v138: sincronização em tempo real: agora tem uma verificação automática que
     detecta quando a conexão com a nuvem ficou "morta" com o site aberto (sem
     ir para segundo plano) e reconecta sozinha, sem precisar fechar e abrir o
@@ -1225,8 +1228,6 @@
   .modal-btn-primary:hover{ filter:brightness(1.1); }
   .modal-btn-primary:disabled{ opacity:.4; cursor:default; filter:none; }
   .modal-btn-secondary{ background:#2c2c2c; color:#ddd; }
-  .sync-force-btn{ display:block; width:100%; box-sizing:border-box; margin:0 0 14px; text-align:center; }
-  .sync-force-btn:disabled{ opacity:.5; cursor:default; }
   .modal-btn-primary.danger{ background:#e5484d; color:#fff; }
   .modal-btn-primary.danger:hover{ filter:brightness(1.08); }
   .modal-btn-secondary:hover{ background:#3a3a3a; }
@@ -1757,7 +1758,6 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       <div class="caps-aviso" id="syncCapsAviso" aria-live="polite">Caps Lock LIGADO</div>
     </div>
     <div class="sync-status" id="syncModalStatus"></div>
-    <button type="button" class="modal-btn-secondary sync-force-btn" id="syncForceBtn" style="display:none">Forçar sincronização agora</button>
     <div class="modal-actions">
       <button class="modal-btn-danger" id="syncDisconnectBtn" style="display:none">Sair da conta</button>
       <button class="modal-btn-secondary" id="syncCancelBtn">Fechar</button>
@@ -2081,7 +2081,7 @@ let syncUser = null;
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 138;
+const VERSAO_SITE = 139;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2317,7 +2317,6 @@ function atualizarModalSync(){
   const logado = !!syncUser;
   document.getElementById('syncLoginFields').style.display = logado ? 'none' : '';
   document.getElementById('syncDisconnectBtn').style.display = logado ? '' : 'none';
-  document.getElementById('syncForceBtn').style.display = logado ? '' : 'none';
   document.getElementById('syncSaveBtn').style.display = logado ? 'none' : '';
   document.getElementById('syncModalMsg').textContent = logado
     ? 'Conectado como ' + (syncUser.email || 'sua conta') + '. Tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real, sem precisar fazer nada.'
@@ -2396,17 +2395,6 @@ document.getElementById('syncDisconnectBtn').addEventListener('click', async () 
   fecharModalSync();
 });
 
-// Botão "Forçar sincronização agora": reconecta a escuta em tempo real na
-// hora, sem precisar fechar e abrir o app (útil se a conexão ficou "morta"
-// com o site aberto, sem passar por segundo plano).
-const syncForceBtn = document.getElementById('syncForceBtn');
-syncForceBtn.addEventListener('click', () => {
-  if(!syncUser || !syncBackend) return;
-  syncForceBtn.disabled = true;
-  syncMostrar('sync');
-  ressincronizar();
-  setTimeout(() => { syncForceBtn.disabled = false; }, 1200);
-});
 
 // Verificação automática da conexão em tempo real: no iPhone (e em outros
 // aparelhos), a conexão com a nuvem às vezes fica "morta" mesmo com o site
