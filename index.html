@@ -1,9 +1,18 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 155
+  VERSÃO ATUAL: 156
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v156: o link "blob:https://..." ainda aparecia usando "Salvar PNG" e
+    depois compartilhando pelo WhatsApp — esse botão abre o arquivo num
+    link temporário numa aba à parte, e usar o Compartilhar do PRÓPRIO
+    celular a partir de lá (em vez do botão do site) manda esse link em
+    vez do arquivo de verdade pro WhatsApp. Agora, no celular, os botões
+    "Salvar PNG"/"Salvar PDF" ficam escondidos — só aparecem "Compartilhar
+    imagem" e "Compartilhar como PDF", que já mandam o arquivo de verdade
+    e também têm as opções "Salvar imagem"/"Salvar em Arquivos" dentro do
+    próprio Compartilhar. No computador nada muda.
   v155: achada a causa do link "blob:https://..." aparecendo como texto ao
     compartilhar: a prévia da imagem na tela de PRINT é um link temporário
     que só existe naquela aba. Ao tocar e segurar na prévia e usar o
@@ -1817,7 +1826,7 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
     <h3 class="modal-title">Imagem pronta</h3>
     <img id="printPreview" class="print-preview" alt="Prévia do calendário">
     <p class="modal-msg print-dica">Para o WhatsApp não perder qualidade, envie como <b>PDF</b>: ele não comprime documentos. Enviar como imagem é mais rápido, mas o WhatsApp reduz a qualidade das fotos.</p>
-    <p class="modal-msg print-dica" id="printDicaSalvar" hidden>Para guardar no aparelho, use <b>Compartilhar</b> e escolha <b>Salvar imagem</b> ou <b>Salvar em Arquivos</b>. Os botões Salvar abrem o arquivo numa janela à parte.</p>
+    <p class="modal-msg print-dica" id="printDicaSalvar" hidden>Para guardar no aparelho, toque em <b>Compartilhar</b> e escolha <b>Salvar imagem</b> ou <b>Salvar em Arquivos</b>.</p>
     <div class="print-acoes">
       <button type="button" class="modal-btn-primary" id="printShareImg">Compartilhar imagem</button>
       <button type="button" class="modal-btn-primary" id="printSharePdf">Compartilhar como PDF (sem perder qualidade)</button>
@@ -2238,7 +2247,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 155;
+const VERSAO_SITE = 156;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3553,11 +3562,16 @@ function abrirModalPrint(blob){
   const temPdf = !!(window.jspdf && window.jspdf.jsPDF);
   document.getElementById('printShareImg').hidden = !podeCompartilhar(arqImg);
   document.getElementById('printSharePdf').hidden = !(temPdf && podeCompartilhar(arqPdf));
-  // onde há compartilhamento (celular) o download por link abriria a imagem dentro do app e
-  // sujaria o histórico dele: lá o salvar é feito pelo próprio Compartilhar
+  // Onde há Compartilhar de arquivo (celular), os botões "Salvar" abrem o
+  // PNG/PDF num link temporário (blob:) numa aba à parte — e se a pessoa
+  // usar o Compartilhar do PRÓPRIO celular/navegador a partir dali (em vez
+  // do botão do site), o WhatsApp recebe esse link em vez do arquivo de
+  // verdade. Por isso, onde já existe Compartilhar de arquivo, os botões
+  // Salvar ficam escondidos — o Compartilhar do site (que manda o arquivo
+  // de verdade) já tem as opções "Salvar imagem"/"Salvar em Arquivos".
   const celular = podeCompartilhar(arqImg);
-  document.getElementById('printSavePng').hidden = false;
-  document.getElementById('printSavePdf').hidden = !temPdf;
+  document.getElementById('printSavePng').hidden = celular;
+  document.getElementById('printSavePdf').hidden = celular || !temPdf;
   document.getElementById('printDicaSalvar').hidden = !celular;
   printOverlay.classList.add('show');
 }
