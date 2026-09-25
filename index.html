@@ -1,9 +1,16 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 152
+  VERSÃO ATUAL: 153
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v153: corrigido o "Compartilhar imagem" (PNG) pelo WhatsApp no iPhone:
+    a imagem gerada é bem grande (o calendário inteiro em alta resolução),
+    e o WhatsApp, ao receber um arquivo grande demais direto pelo
+    Compartilhar, não mostra a foto — mostra o link do arquivo como texto
+    embaixo e ainda comprime bastante. Agora o botão "Compartilhar imagem"
+    envia uma cópia reduzida (ainda nítida no celular); Salvar PNG e
+    Compartilhar/Salvar PDF continuam na qualidade original, sem mudança.
   v152: ao compartilhar a imagem/PDF do calendário (botão PRINT →
     Compartilhar), removido o título "Calendário 2026" que alguns apps
     (WhatsApp, por exemplo) escrevem junto com o arquivo enviado. Agora só
@@ -2205,7 +2212,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 152;
+const VERSAO_SITE = 153;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3465,6 +3472,35 @@ async function capturarCalendarios(alvo){
   return blob;
 }
 
+// Alguns apps (o WhatsApp no iPhone é o principal caso) não recebem direito
+// uma imagem grande enviada pelo Compartilhar do navegador: em vez de exibir
+// a foto, mostram o link/identificador do arquivo como texto embaixo dela e
+// ainda comprimem bastante a imagem. Isso não acontece ao salvar a imagem no
+// aparelho (Fotos) — só no compartilhamento direto de um arquivo grande.
+// Pra evitar isso, o botão "Compartilhar imagem" usa uma cópia reduzida
+// (ainda nítida o bastante pra ler no celular); os botões Salvar e o PDF
+// continuam com a imagem no tamanho e qualidade originais.
+async function reduzirImagemParaCompartilhar(blob, maxLado){
+  const url = URL.createObjectURL(blob);
+  try{
+    const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const maior = Math.max(im.naturalWidth, im.naturalHeight);
+    if(maior <= maxLado) return blob;   // já é pequena o bastante, não mexe
+    const fator = maxLado / maior;
+    const w = Math.round(im.naturalWidth * fator), h = Math.round(im.naturalHeight * fator);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(im, 0, 0, w, h);
+    const menor = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    return menor || blob;
+  }catch(e){
+    return blob;   // qualquer problema: compartilha a original mesmo
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+
 // ===== PRINT: gera a imagem e abre a tela de compartilhar / salvar =====
 const printOverlay = document.getElementById('printModalOverlay');
 const printStatus = document.getElementById('printStatus');
@@ -3528,7 +3564,13 @@ function abrirModalPrint(blob){
   document.getElementById('printDicaSalvar').hidden = !celular;
   printOverlay.classList.add('show');
 }
-document.getElementById('printShareImg').addEventListener('click', () => compartilharBlob(printBlob, nomeArquivoPrint('png'), 'image/png'));
+document.getElementById('printShareImg').addEventListener('click', async () => {
+  const b = document.getElementById('printShareImg'); b.disabled = true;
+  try{
+    const menor = await reduzirImagemParaCompartilhar(printBlob, 2000);
+    await compartilharBlob(menor, nomeArquivoPrint('png'), 'image/png');
+  }finally{ b.disabled = false; }
+});
 document.getElementById('printSharePdf').addEventListener('click', async () => {
   const b = document.getElementById('printSharePdf'); b.disabled = true; printStatus.textContent = 'Preparando o PDF...';
   try{ const pdf = await gerarPdfDoPrint(); printStatus.textContent = ''; b.disabled = false; await compartilharBlob(pdf, nomeArquivoPrint('pdf'), 'application/pdf'); }
