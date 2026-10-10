@@ -1,9 +1,21 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 157
+  VERSÃO ATUAL: 158
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v158: VISUAL NOVO do site inteiro (só aparência: nenhum dado, tamanho de
+    calendário ou funcionamento mudou). Fundo azul-grafite com brilho suave,
+    fonte Inter em tudo, barra de menu e legenda em "vidro", botões com
+    reflexo ao passar o mouse, meses em cartões com título discreto, dias
+    pintados com relevo, fins de semana mais apagados, abas do celular com a
+    cor de cada calendário (azul / cobalto / vermelho), quadros de valores
+    com a linha do Total em destaque (e o Total grande não corta mais),
+    todas as janelas no mesmo estilo da ficha do serviço. Animações: os
+    meses entram em cascata ao abrir o site, o calendário desliza ao trocar
+    de aba e o ano tem brilho em degradê. O PRINT continua saindo limpo.
+    Todo o visual novo fica num bloco só no fim do <style> ("v158: VISUAL
+    PREMIUM"): apagando esse bloco o site volta ao visual anterior.
   v157: LOCAL E HORÁRIO do serviço na DELEGADA e na DEJEM. (1) Ao tocar numa
     cor da DELEGADA ou da DEJEM com dias selecionados, abre a janela "Local
     e horário": escolhe a área (DELEGADA, com a AISP) ou a estação do Metrô
@@ -659,7 +671,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Calendário">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="theme-color" content="#1e1e1e">
+<meta name="theme-color" content="#0b0e13">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1875,6 +1887,165 @@ html[data-layout="stack"] .sv-foot, html[data-layout="stack"] .fc-acoes{ border-
 table.dowtable td.tem-local{ position:relative; }
 table.dowtable td.tem-local::after{ content:''; position:absolute; top:2px; right:2px; width:4px; height:4px; border-radius:50%; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); pointer-events:none; }
 html.imprimindo table.dowtable td.tem-local::after{ display:none !important; }
+
+/* =====================================================================
+   v158: VISUAL PREMIUM (só aparência). Apagar este bloco inteiro devolve
+   o visual anterior. Nada aqui muda tamanho de calendário no computador.
+   ===================================================================== */
+:root{
+  --bg:#0b0e13; --panel:#121720; --header:#0c1017; --text:#e8edf3; --muted:#8793a3;
+  --linha:#212a36; --linha2:#2c3745; --vidro:rgba(22,28,38,.72);
+}
+html, body{ background:var(--bg); }
+body{ font-family:'Inter','Segoe UI',Arial,sans-serif; -webkit-font-smoothing:antialiased; font-feature-settings:"tnum" 1, "cv11" 1; }
+body::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(900px 520px at 12% -8%, rgba(0,176,240,.13), transparent 62%),
+    radial-gradient(760px 480px at 92% 4%, rgba(64,116,255,.10), transparent 60%),
+    radial-gradient(900px 600px at 50% 112%, rgba(255,40,60,.06), transparent 60%); }
+#gerandoImagem{ background:#0b0e13; }
+
+/* ---- barra de menu e legenda ---- */
+.topbar, .palette{ background:var(--vidro); border:1px solid var(--linha); border-radius:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px -18px rgba(0,0,0,.8);
+  -webkit-backdrop-filter:blur(14px) saturate(140%); backdrop-filter:blur(14px) saturate(140%); }
+.topbar{ position:relative; z-index:30; }
+.topbar button, .year-picker-btn{ font-family:inherit; }
+.topbar button:not(.year-picker-btn){ background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025)); border:1px solid var(--linha2); border-radius:10px;
+  color:#dfe6ee; font-weight:700; letter-spacing:.06em; overflow:hidden; box-shadow:0 1px 0 rgba(255,255,255,.06) inset; }
+.topbar button:not(.year-picker-btn)::before{ content:""; position:absolute; top:0; bottom:0; left:-60%; width:40%; pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.16), transparent); transform:skewX(-18deg); opacity:0; }
+@media (hover:hover){
+  .topbar button:not(.year-picker-btn):hover{ background:linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.04)); border-color:#465466; color:#fff;
+    transform:translateY(-1px); box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 10px 22px -12px rgba(0,0,0,.9); }
+  .topbar button:not(.year-picker-btn):hover::before{ animation:v158Reflexo .7s ease-out; }
+}
+@keyframes v158Reflexo{ 0%{ left:-60%; opacity:0; } 20%{ opacity:1; } 100%{ left:130%; opacity:0; } }
+.topbar button:not(.year-picker-btn):active{ background:rgba(255,255,255,.04); transform:scale(.96); }
+.topbar button#addYearBtn{ background:linear-gradient(180deg, #2bcbff, #0096d6); border-color:#39c8ff; color:#02202c;
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 10px 24px -12px rgba(0,176,240,.9); }
+@media (hover:hover){ .topbar button#addYearBtn:hover{ background:linear-gradient(180deg, #55d7ff, #10a8e6); border-color:#7fe0ff; color:#02202c;
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 12px 28px -10px rgba(0,176,240,1); } }
+.topbar button#addYearBtn:active{ background:linear-gradient(180deg, #0aa8e0, #0088bd); }
+.year-picker-btn{ background:#0c1017; border-color:var(--linha2); border-radius:10px; }
+@media (hover:hover){ .year-picker-btn:hover{ background:#111722; border-color:#465466; } }
+.year-picker-menu{ background:#121720; border-color:var(--linha2); border-radius:12px; box-shadow:0 22px 44px -14px rgba(0,0,0,.85); }
+.year-picker-item{ border-radius:8px; }
+.topbar button.sync-btn[data-estado="ok"], .topbar button.sync-btn[data-estado="sync"]{ background:linear-gradient(180deg, rgba(97,240,0,.13), rgba(97,240,0,.04)); border-color:rgba(97,240,0,.5); color:#d9ffc2; }
+.topbar button.sync-btn[data-estado="off"], .topbar button.sync-btn[data-estado="erro"]{ background:linear-gradient(180deg, rgba(255,59,59,.14), rgba(255,59,59,.04)); }
+
+.palette-group{ border-right-color:var(--linha); }
+.group-label{ font-family:inherit; font-size:10.5px; letter-spacing:.14em; color:#7c8999; }
+.swatch{ background:rgba(255,255,255,.045); border:1px solid var(--linha); border-radius:999px; color:#dfe6ee; font-weight:500; }
+@media (hover:hover){ .swatch:hover{ background:rgba(255,255,255,.09); border-color:#465466; } }
+.swatch .box{ border:none; box-shadow:0 0 0 2px rgba(255,255,255,.1), 0 0 10px -1px currentColor; }
+.swatch-value{ color:#7ee04a; }
+
+/* ---- títulos dos calendários ---- */
+.cal-year{ font-weight:800; letter-spacing:-.03em; color:#5fd4ff;
+  background:linear-gradient(100deg, #9fe6ff 0%, #17c3ff 38%, #4b7dff 72%, #9fe6ff 100%); background-size:220% 100%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:v158Ano 9s linear infinite; }
+@keyframes v158Ano{ to{ background-position:-220% 0; } }
+.cal-col h2{ font-weight:700; letter-spacing:.32em; text-indent:.32em; color:#cfd8e3; }
+
+/* ---- meses ---- */
+.month{ border-radius:12px; background:linear-gradient(180deg, #151b25, #10151d); box-shadow:0 1px 0 rgba(255,255,255,.045) inset, 0 12px 26px -18px rgba(0,0,0,.9); }
+.month::after{ border-radius:10px; }
+.month h3{ border-radius:7px; font-weight:700; letter-spacing:.2em; text-indent:.2em; color:#c3cedb; box-shadow:0 0 0 1px rgba(255,255,255,.04) inset; }
+.month.mes-atual h3, .month.mes-selecionado h3{ letter-spacing:.2em; }
+@media (hover:hover){ .month h3.clicavel:hover{ letter-spacing:.2em; color:#fff; } }
+table.dowtable th{ color:#66748a; font-weight:700; letter-spacing:.04em; }
+table.dowtable td{ color:#c9d3de; font-weight:600; border-radius:6px; }
+table.dowtable td:first-child, table.dowtable td:last-child{ color:#7a8798; }
+table.dowtable td.pintado{ font-weight:700; text-shadow:0 1px 1px rgba(0,0,0,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(0,0,0,.22), 0 2px 6px -2px rgba(0,0,0,.7); }
+table.dowtable td.hoje{ box-shadow:inset 0 0 0 2px #ffb020, 0 0 10px -1px rgba(255,176,32,.7); color:#fff; }
+table.dowtable td.pintado.hoje{ box-shadow:inset 0 0 0 2px #ffb020, 0 0 10px -1px rgba(255,176,32,.8); }
+table.dowtable td.selected{ outline:2px solid #fff; outline-offset:-2px; box-shadow:0 0 0 3px rgba(255,255,255,.16), 0 0 14px rgba(255,255,255,.35); }
+@media (hover:hover){ table.dowtable td:not(.empty):not(.pintado):hover{ background:rgba(255,255,255,.08); color:#fff; }
+  table.dowtable td.pintado:hover{ filter:brightness(1.14); } }
+
+/* ---- quadros de valores ---- */
+.summary{ border-radius:12px; background:linear-gradient(180deg, #151b25, #10151d); border:1px solid var(--linha); box-shadow:0 12px 26px -18px rgba(0,0,0,.9); }
+.summary caption{ background:#0c1017; letter-spacing:.3em; text-indent:.3em; font-weight:700; color:#dfe6ee; box-shadow:inset 0 -2px 0 var(--marca, #2c3745); }
+.summary[data-cal="delegada"]{ --marca:#2f63ff; }
+.summary[data-cal="dejem"]{ --marca:#ff2a3a; }
+.summary col.c-mes{ width:36%; } .summary col.c-dias{ width:16%; } .summary col.c-rs{ width:48%; }
+.summary td{ color:#d5dde7; font-weight:500; }
+.summary td.num{ color:#fff; font-weight:700; }
+.summary td.rs{ color:#7ee04a; text-align:right; font-variant-numeric:tabular-nums; }
+.summary tr:not(.total):nth-child(even) td{ background:rgba(255,255,255,.022); }
+.summary tr.total td{ border-top:1px solid var(--linha2); color:#fff; font-weight:800; }
+.summary tr.total td.rs{ color:#a6ff7a; font-size:calc(12.5px * var(--s)); text-shadow:0 0 14px rgba(97,240,0,.45); }
+.escala-dica{ background:rgba(0,176,240,.07); border-color:rgba(0,176,240,.28); border-radius:12px; color:#cfe6f3; }
+
+/* ---- janelas (mesmo estilo da ficha do serviço) ---- */
+.modal-overlay{ background:rgba(4,6,9,.72); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+.modal-box{ background:#14171b; border-color:#2a3038; border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.6); font-family:'Inter','Segoe UI',Arial,sans-serif; }
+.modal-icon{ border-radius:13px; width:42px; height:42px; box-shadow:0 0 0 1px rgba(255,255,255,.06) inset; }
+.modal-title{ font-size:18px; font-weight:700; letter-spacing:-.01em; }
+.modal-msg{ color:#aab5c2; }
+.modal-input{ background:#0f1215; border-color:#2b323b; border-radius:11px; font-family:inherit; }
+.modal-actions button, .print-acoes button{ border-radius:11px; font-family:inherit; }
+.modal-btn-primary{ background:linear-gradient(180deg, #2bcbff, #0096d6); box-shadow:0 8px 20px -10px rgba(0,176,240,.9); }
+.modal-btn-secondary{ background:#232830; color:#dbe3ec; }
+.escala-previa{ background:#0f1215; border-color:#2b323b; border-radius:11px; }
+.print-preview{ border-radius:12px; border-color:#2b323b; }
+#barraSel{ background:rgba(22,28,38,.92); border-color:#3a4758; border-radius:16px; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px -12px rgba(0,0,0,.85); }
+#barraSel button{ border-radius:10px; }
+
+/* ---- celular / tablet ---- */
+html[data-layout="stack"] .topbar{ border-radius:18px; }
+html[data-layout="stack"] .topbar button:not(.year-picker-btn){ letter-spacing:.03em; min-height:44px; }
+html[data-layout="stack"] .year-picker-btn{ min-height:44px; }
+html[data-layout="stack"] .tabs{ background:var(--vidro); border:1px solid var(--linha); border-radius:16px; padding:5px; gap:4px;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset; }
+.tabs button{ border-radius:11px; font-family:inherit; font-weight:700; letter-spacing:.12em; color:#8793a3; }
+.tabs button.active{ color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25); animation:v158Aba .28s cubic-bezier(.2,.8,.2,1); }
+.tabs button.active[data-tab="servico"]{ background:linear-gradient(180deg, #2bcbff, #0096d6); color:#02202c; text-shadow:none; box-shadow:0 8px 20px -10px rgba(0,176,240,1), 0 1px 0 rgba(255,255,255,.35) inset; }
+.tabs button.active[data-tab="delegada"]{ background:linear-gradient(180deg, #3f6dff, #1D4ED8); box-shadow:0 8px 20px -10px rgba(47,99,255,1), 0 1px 0 rgba(255,255,255,.25) inset; }
+.tabs button.active[data-tab="dejem"]{ background:linear-gradient(180deg, #ff4a4a, #e0101c); box-shadow:0 8px 20px -10px rgba(255,40,50,1), 0 1px 0 rgba(255,255,255,.25) inset; }
+@keyframes v158Aba{ from{ transform:scale(.94); } to{ transform:none; } }
+html[data-layout="stack"] .palette{ border-radius:16px; background:rgba(16,21,29,.86); }
+html[data-layout="stack"] .swatch{ background:rgba(255,255,255,.06); }
+html[data-layout="stack"] .cal-year{ font-size:34px; }
+html[data-layout="stack"] .cal-col h2{ font-size:12px; margin-bottom:14px; }
+html[data-layout="stack"] .months{ gap:10px; }
+html[data-layout="stack"] .month{ border-radius:14px; padding:7px; }
+html[data-layout="stack"] .month h3{ font-size:11.5px; }
+html[data-layout="stack"] table.dowtable td{ border-radius:8px; }
+html[data-layout="stack"] .summary{ border-radius:16px; }
+html[data-layout="stack"] .summary td{ padding:8px 6px; }
+html[data-layout="stack"] .summary td.rs{ font-size:13.5px; }
+html[data-layout="stack"] .summary tr.total td{ padding-top:11px; font-size:15px; }
+html[data-layout="stack"] .summary tr.total td.rs{ font-size:16px; }
+
+/* ---- animações de entrada ---- */
+@keyframes v158Sobe{ from{ opacity:0; transform:translateY(14px) scale(.985); } to{ opacity:1; transform:none; } }
+@keyframes v158Desce{ from{ opacity:0; transform:translateY(-10px); } to{ opacity:1; transform:none; } }
+html.entrando .topbar{ animation:v158Desce .45s cubic-bezier(.2,.8,.2,1) both; }
+html.entrando .tabs, html.entrando .palette{ animation:v158Desce .45s .06s cubic-bezier(.2,.8,.2,1) both; }
+html.entrando .month, html.entrando .summary{ animation:v158Sobe .5s cubic-bezier(.2,.8,.2,1) both; }
+html.entrando .month:nth-child(2){ animation-delay:.03s; } html.entrando .month:nth-child(3){ animation-delay:.06s; }
+html.entrando .month:nth-child(4){ animation-delay:.09s; } html.entrando .month:nth-child(5){ animation-delay:.12s; }
+html.entrando .month:nth-child(6){ animation-delay:.15s; } html.entrando .month:nth-child(7){ animation-delay:.18s; }
+html.entrando .month:nth-child(8){ animation-delay:.21s; } html.entrando .month:nth-child(9){ animation-delay:.24s; }
+html.entrando .month:nth-child(10){ animation-delay:.27s; } html.entrando .month:nth-child(11){ animation-delay:.30s; }
+html.entrando .month:nth-child(12){ animation-delay:.33s; } html.entrando .summary{ animation-delay:.2s; }
+html.troca-aba[data-layout="stack"] .cal-col, html.troca-aba[data-layout="stack"] .summaries-col{ animation:v158Sobe .32s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){
+  .cal-year, .tabs button.active, html.entrando .topbar, html.entrando .tabs, html.entrando .palette, html.entrando .month, html.entrando .summary,
+  html.troca-aba[data-layout="stack"] .cal-col, html.troca-aba[data-layout="stack"] .summaries-col{ animation:none !important; }
+}
+
+/* ---- PRINT: o gerador de imagem não desenha degradê em texto, sombra interna nem vidro ---- */
+html.imprimindo .cal-year{ background:none !important; -webkit-text-fill-color:#17c3ff !important; color:#17c3ff !important; animation:none !important; }
+html.imprimindo .month, html.imprimindo .summary{ background:#121720 !important; box-shadow:none !important; animation:none !important; }
+html.imprimindo .month h3{ box-shadow:none !important; }
+html.imprimindo table.dowtable td{ box-shadow:none !important; text-shadow:none !important; }
+html.imprimindo .summary caption{ box-shadow:none !important; }
+html.imprimindo .summary tr.total td.rs{ text-shadow:none !important; }
 </style>
 </head>
 <body>
@@ -2444,7 +2615,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 157;
+const VERSAO_SITE = 158;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2913,6 +3084,9 @@ function setTab(tab){
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
   document.documentElement.dataset.tab = tab;
+  // animação de troca de aba (só nesse momento, não a cada pintura)
+  { const r = document.documentElement; r.classList.remove('troca-aba'); void r.offsetWidth; r.classList.add('troca-aba');
+    clearTimeout(setTab._t); setTab._t = setTimeout(() => r.classList.remove('troca-aba'), 420); }
   delete neonDesligado[tab + '|' + currentYear];   // ao entrar na aba o neon do mês atual volta aceso
   render();
   window.scrollTo(0, 0);
@@ -3059,6 +3233,7 @@ function render(){
             if(dateStr === hojeStr()) td.classList.add('hoje');
             const color = getColorFor(cal.key, currentYear, dateStr);
             if(color){
+              td.classList.add('pintado');
               td.style.background = COLORS[color];
               td.style.color = (color === 'verde') ? '#111' : '#fff';
               const det = cal.key !== 'servico' ? detalhes[cellKey(cal.key, currentYear, dateStr)] : null;
@@ -4007,7 +4182,7 @@ async function capturarCalendarios(alvo){
   // maior escala (até 3x) que ainda cabe no limite de pixels do canvas do iPhone (~16,7 milhões)
   const escala = Math.min(3, Math.floor(Math.sqrt(15500000 / (larguraTotal * alturaTotal)) * 10) / 10);
   const canvas = await html2canvas(alvo, {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#0b0e13',
     scale: escala,
     useCORS: true,
     width: larguraTotal,
@@ -4305,6 +4480,9 @@ document.querySelectorAll('#tabs button').forEach(b => {
   b.setAttribute('aria-selected', on ? 'true' : 'false');
 });
 applyLayout();
+// entrada em cascata dos meses, só ao abrir o site
+document.documentElement.classList.add('entrando');
+setTimeout(() => document.documentElement.classList.remove('entrando'), 1300);
 render();
 syncMostrar('off');
 requestAnimationFrame(() => rolarParaMesAtual());
