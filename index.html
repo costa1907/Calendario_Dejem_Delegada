@@ -1,9 +1,18 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 164
+  VERSÃO ATUAL: 165
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v165: (1) RESUMO DO MÊS no celular: no lugar do "2026 / DELEGADA" solto,
+    cada aba ganhou um cartão com o mês atual. DELEGADA e DEJEM: quantos
+    serviços no mês, quanto já foi feito (R$) e quanto falta (R$), com uma
+    barra de progresso. SERVIÇO: dias de trabalho no mês, feitos e
+    restantes. "Feito" = dias anteriores a hoje. Vendo outro ano, o cartão
+    mostra o total daquele ano. No computador e no PRINT nada muda.
+    (2) ÍCONE NOVO do app (arquivos apple-touch-icon.png, icon-192.png,
+    icon-512.png, icon-512-maskable.png e manifest.json, que ficam ao lado
+    do index.html no repositório).
   v164: (1) TELA DE ABERTURA: ao abrir, aparece a marca do app enquanto o
     login e os dados carregam (no máximo ~3s); quando some, os meses entram
     em cascata já com tudo no lugar. (2) TEMA: botão TEMA no menu para
@@ -2266,6 +2275,26 @@ table.dowtable td.acendeu{ animation:v164Acende .55s cubic-bezier(.2,.9,.2,1.2) 
 .summary td.rs-mudou{ animation:v164Valor .9s ease-out; }
 @keyframes v164Valor{ 0%{ color:#fff; transform:scale(1.08); } 100%{ transform:none; } }
 @media (prefers-reduced-motion:reduce){ #abertura, #abertura *{ animation:none !important; transition:none !important; } table.dowtable td.acendeu, .summary td.rs-mudou{ animation:none !important; } }
+
+/* ===== v165: cartão-resumo do mês (celular) ===== */
+.cal-resumo{ display:none; }
+html[data-layout="stack"] .cal-year, html[data-layout="stack"] .cal-col h2{ display:none; }
+html[data-layout="stack"] .cal-resumo{ display:block; margin:2px 0 14px; padding:14px 14px 13px; border-radius:16px; border:1px solid var(--linha); position:relative; overflow:hidden;
+  background:linear-gradient(135deg, rgba(var(--mr),.20), rgba(var(--mr),.03) 55%), #121720; font-family:'Inter','Segoe UI',Arial,sans-serif; }
+.cal-resumo[data-cal="servico"]{ --mr:0,176,240; --mc:#17c3ff; } .cal-resumo[data-cal="delegada"]{ --mr:47,99,255; --mc:#7ea2ff; } .cal-resumo[data-cal="dejem"]{ --mr:255,42,58; --mc:#ff7a84; }
+.cr-topo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.cr-mes{ font-size:21px; font-weight:800; letter-spacing:-.02em; color:#fff; }
+.cr-cal{ font-size:10.5px; font-weight:700; letter-spacing:.16em; padding:5px 10px; border-radius:999px; color:var(--mc); background:rgba(var(--mr),.16); border:1px solid rgba(var(--mr),.4); }
+.cr-nums{ display:grid; grid-template-columns:auto 1fr 1fr; gap:6px 16px; align-items:end; }
+.cal-resumo[data-cal="servico"] .cr-nums{ grid-template-columns:1fr 1fr 1fr; }
+.cr-nums b{ display:block; font-size:17px; line-height:1.15; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cr-nums div:first-child b{ font-size:26px; font-weight:800; }
+.cr-nums b.cr-ok{ color:#7ee04a; } .cr-nums b.cr-falta{ color:#dfe6ee; }
+.cr-nums span{ display:block; margin-top:3px; font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#8793a3; white-space:nowrap; }
+.cr-barra{ height:4px; border-radius:4px; background:rgba(255,255,255,.08); margin-top:13px; overflow:hidden; }
+.cr-barra i{ display:block; height:100%; border-radius:4px; background:var(--mc); }
+html.entrando[data-layout="stack"] .cal-resumo{ animation:v158Sobe .5s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){ html.entrando[data-layout="stack"] .cal-resumo{ animation:none !important; } }
 </style>
 </head>
 <body>
@@ -2873,7 +2902,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 164;
+const VERSAO_SITE = 165;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3464,6 +3493,7 @@ function render(){
     col.className = 'cal-col';
     col.dataset.cal = cal.key;
     col.innerHTML = `<div class="cal-year">${currentYear}</div><h2>${cal.title}</h2>`;
+    col.appendChild(buildResumo(cal));
     const monthsWrap = document.createElement('div');
     monthsWrap.className = 'months';
 
@@ -3588,6 +3618,38 @@ function render(){
   renderProximos();
   alignSummaries();
   recemPintados = new Set();
+}
+
+// Cartão-resumo do mês (só aparece no celular): v165
+function buildResumo(cal){
+  const el = document.createElement('div'); el.className = 'cal-resumo'; el.dataset.cal = cal.key;
+  const agora = new Date(), anoAtual = currentYear === agora.getFullYear(), hs = hojeStr();
+  const pref = cal.key + '|' + currentYear + '|' + (anoAtual ? hs.slice(0,7) : currentYear + '-');
+  let n = 0, feitos = 0, vFeito = 0, vFalta = 0;
+  Object.keys(data).forEach(k => {
+    if(k.indexOf(pref) !== 0) return;
+    const cor = data[k];
+    if(cal.key === 'servico' && cor !== 'azul') return;
+    const v = (RATES[cal.key] && RATES[cal.key][cor]) || 0;
+    n++;
+    if(k.split('|')[2] < hs){ feitos++; vFeito += v; } else vFalta += v;
+  });
+  const dinheiro = cal.key !== 'servico';
+  const itens = dinheiro
+    ? [[String(n), n === 1 ? 'serviço' : 'serviços'], ['R$ ' + fmtBRL(vFeito), 'já feito'], ['R$ ' + fmtBRL(vFalta), 'falta fazer']]
+    : [[String(n), n === 1 ? 'dia de trabalho' : 'dias de trabalho'], [String(feitos), feitos === 1 ? 'feito' : 'feitos'], [String(n - feitos), n - feitos === 1 ? 'falta' : 'faltam']];
+  el.innerHTML = '<div class="cr-topo"><div class="cr-mes"></div><span class="cr-cal"></span></div><div class="cr-nums"></div><div class="cr-barra"><i></i></div>';
+  el.querySelector('.cr-mes').textContent = anoAtual ? MESES_CAP[agora.getMonth()] + ' ' + currentYear : 'Ano de ' + currentYear;
+  el.querySelector('.cr-cal').textContent = cal.title;
+  const nums = el.querySelector('.cr-nums');
+  itens.forEach((it, i) => {
+    const d = document.createElement('div'); d.innerHTML = '<b></b><span></span>';
+    d.querySelector('b').textContent = it[0]; d.querySelector('span').textContent = it[1];
+    if(dinheiro && i > 0) d.querySelector('b').className = i === 1 ? 'cr-ok' : 'cr-falta';
+    nums.appendChild(d);
+  });
+  el.querySelector('.cr-barra i').style.width = (n ? Math.round(feitos / n * 100) : 0) + '%';
+  return el;
 }
 
 function buildSummary(cal){
