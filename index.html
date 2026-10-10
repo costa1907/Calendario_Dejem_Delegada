@@ -1,9 +1,19 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 160
+  VERSÃO ATUAL: 162
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v162: EXPORTAR completo. O arquivo de backup agora leva tudo: os dias
+    pintados, o local e horário de cada serviço, os valores em R$ (EDITAR
+    VALORES) e o regime salvo em ESCALA. O IMPORTAR restaura tudo isso e
+    continua aceitando os arquivos antigos (que só tinham os dias). O nome
+    do arquivo passa a ter a data (calendario_backup_AAAA-MM-DD.json).
+  v161: MENU RECOLHIDO no celular. A barra do topo passa a ter uma linha só:
+    o ano, o SINCRONIZAR e o botão MENU. Os outros seis botões (CRIAR ANO,
+    ESCALA, EDITAR VALORES, PRINT, EXPORTAR, IMPORTAR) aparecem ao tocar
+    em MENU e somem de novo ao escolher um deles ou ao tocar fora. No
+    computador e no tablet nada muda (o menu continua todo à mostra).
   v160: CORREÇÃO do travamento no iPhone ao dar zoom várias vezes ("Um
     problema ocorreu repetidamente") e dos calendários piscando/sumindo
     durante o zoom. A causa eram efeitos do visual novo (v158) que pesam
@@ -2141,6 +2151,25 @@ body::before{ position:absolute; inset:0 0 auto 0; height:900px; }
   .topbar, .palette, #proximos, .px-item, .px-dia, .summary tr.total td.rs{ box-shadow:none !important; text-shadow:none !important; }
   .swatch .box{ box-shadow:0 0 0 2px rgba(255,255,255,.1) !important; }
 }
+
+/* ===== v161: menu recolhido no celular ===== */
+#menuBtn{ display:none !important; }
+@media (max-width:559.98px){
+  html[data-layout="stack"] .topbar{ grid-template-columns:repeat(6, minmax(0,1fr)); align-items:stretch; }
+  html[data-layout="stack"] .topbar .year-picker{ grid-column:span 2; order:0; }
+  html[data-layout="stack"] .topbar button.sync-btn{ grid-column:span 3; order:1; min-height:50px; padding:6px 8px; font-size:11px; letter-spacing:.03em; white-space:nowrap; }
+  html[data-layout="stack"] .topbar button.sync-btn #syncBtnTxt{ overflow:hidden; text-overflow:ellipsis; }
+  html[data-layout="stack"] #menuBtn{ display:inline-flex !important; grid-column:span 1; order:2; min-height:50px !important; padding:4px 0 !important; gap:3px !important; font-size:8.5px !important; }
+  html[data-layout="stack"] .year-picker-btn{ min-height:50px; height:100%; }
+  html[data-layout="stack"] .topbar button:not(.year-picker-btn):not(.sync-btn):not(#menuBtn){ display:none; grid-column:span 2; order:3; }
+  html.menu-aberto[data-layout="stack"] .topbar button:not(.year-picker-btn):not(.sync-btn):not(#menuBtn){ display:inline-flex; animation:v158Desce .22s cubic-bezier(.2,.8,.2,1) both; }
+  html.menu-aberto[data-layout="stack"] #menuBtn{ border-color:var(--azul); color:#fff; }
+  #menuBtn .ic path{ transition:transform .2s ease, opacity .15s ease; transform-origin:12px 12px; }
+  html.menu-aberto #menuBtn .m1{ transform:translateY(5px) rotate(45deg); }
+  html.menu-aberto #menuBtn .m2{ opacity:0; }
+  html.menu-aberto #menuBtn .m3{ transform:translateY(-5px) rotate(-45deg); }
+}
+@media (prefers-reduced-motion:reduce){ html.menu-aberto[data-layout="stack"] .topbar button, #menuBtn .ic path{ animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
@@ -2161,6 +2190,7 @@ body::before{ position:absolute; inset:0 0 auto 0; height:900px; }
   <button id="exportBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 15V4M8 8l4-4 4 4"/></svg><span>EXPORTAR</span></button>
   <button id="importBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 4v11M8 11l4 4 4-4"/></svg><span>IMPORTAR</span></button>
   <button id="syncBtn" class="sync-btn" data-estado="off"><span class="live-dot"></span><span id="syncBtnTxt">SINCRONIZAR</span></button>
+  <button type="button" id="menuBtn" aria-expanded="false" aria-label="Abrir menu"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path class="m1" d="M4 7h16"/><path class="m2" d="M4 12h16"/><path class="m3" d="M4 17h16"/></svg><span>MENU</span></button>
   <input type="file" id="importFile" accept="application/json" style="display:none">
 </div>
 
@@ -2711,7 +2741,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 160;
+const VERSAO_SITE = 162;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -4477,10 +4507,10 @@ document.getElementById('printBtn').addEventListener('click', async () => {
   }
 });
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(Object.assign({}, data, { __detalhes: detalhes }), null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(Object.assign({}, data, { __detalhes: detalhes, __valores: RATES, __escala: lerEscala() || null, __versao: VERSAO_SITE }), null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'calendario_dados.json';
+  a.download = 'calendario_backup_' + hojeStr() + '.json';
   a.click();
 });
 document.getElementById('importBtn').addEventListener('click', async () => {
@@ -4494,21 +4524,35 @@ document.getElementById('importFile').addEventListener('change', (e) => {
   reader.onload = () => {
     try{
       const imported = JSON.parse(reader.result);
-      const det = imported && imported.__detalhes;
-      if(imported) delete imported.__detalhes;
+      if(!imported || typeof imported !== 'object' || Array.isArray(imported)) throw new Error('formato');
+      const det = imported.__detalhes, val = imported.__valores, esc = imported.__escala;
+      Object.keys(imported).forEach(k => { if(k.indexOf('__') === 0) delete imported[k]; });
       data = migrateData(imported);
       if(det && typeof det === 'object' && !Array.isArray(det)) detalhes = det;
+      // valores em R$ e regime da ESCALA (só existem nos arquivos exportados a partir da v162)
+      const partes = ['os dias'];
+      if(det) partes.push('os locais e horários');
+      if(val && typeof val === 'object'){
+        Object.keys(DEFAULT_RATES).forEach(c => { Object.keys(DEFAULT_RATES[c]).forEach(cor => {
+          const v = val[c] && Number(val[c][cor]); if(isFinite(v) && v >= 0 && val[c][cor] !== null && val[c][cor] !== '') RATES[c][cor] = v; }); });
+        try{ localStorage.setItem(RATES_STORAGE_KEY, JSON.stringify(RATES)); }catch(e){}
+        atualizarLegendaValores(); partes.push('os valores');
+      }
+      if(esc && typeof esc === 'object' && esc.inicio && ESCALAS.some(r => r.id === (ESCALA_IDS_ANTIGOS[esc.id] || esc.id))){
+        gravarJSONLocal(ESCALA_KEY, { id: ESCALA_IDS_ANTIGOS[esc.id] || esc.id, inicio: esc.inicio }); partes.push('a escala');
+      }
       refreshYearsFromData();
       if(!YEARS.includes(currentYear)) currentYear = YEARS[YEARS.length - 1];
       popularYearSelect();
       saveData();
       render();
-      showAlert('Dados importados com sucesso.', 'Concluído');
+      showAlert('Backup importado: ' + partes.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.', 'Concluído');
     }catch(err){
       showAlert('Arquivo inválido.', 'Erro');
     }
   };
   reader.readAsText(file);
+  e.target.value = '';   // permite escolher o mesmo arquivo de novo
 });
 
 // Dropdown de ano customizado (substitui o <select> nativo, cuja lista de
@@ -4651,6 +4695,21 @@ document.querySelectorAll('#tabs button').forEach(b => {
   b.classList.toggle('active', on);
   b.setAttribute('aria-selected', on ? 'true' : 'false');
 });
+// Menu recolhido do celular (v161)
+(function(){
+  const raiz = document.documentElement, btn = document.getElementById('menuBtn'), barra = document.querySelector('.topbar');
+  function definir(aberto){
+    raiz.classList.toggle('menu-aberto', aberto);
+    btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+    btn.setAttribute('aria-label', aberto ? 'Fechar menu' : 'Abrir menu');
+    btn.querySelector('span').textContent = aberto ? 'FECHAR' : 'MENU';
+  }
+  btn.addEventListener('click', e => { e.stopPropagation(); vibrar(8); definir(!raiz.classList.contains('menu-aberto')); });
+  // escolher um item ou tocar fora fecha
+  barra.addEventListener('click', e => { const b = e.target.closest('button'); if(b && b !== btn && !b.classList.contains('year-picker-btn') && !b.classList.contains('sync-btn')) definir(false); });
+  document.addEventListener('click', e => { if(raiz.classList.contains('menu-aberto') && !barra.contains(e.target)) definir(false); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') definir(false); });
+})();
 applyLayout();
 // entrada em cascata dos meses, só ao abrir o site
 document.documentElement.classList.add('entrando');
