@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 165
+  VERSÃO ATUAL: 166
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v166: quadro PRÓXIMOS SERVIÇOS / PRÓXIMAS DELEGADAS / PRÓXIMAS DEJEM:
+    (1) abrir e fechar agora funciona tocando em QUALQUER parte da faixa do
+    título (e, quando está encolhido, na pílula inteira), não só em cima do
+    nome; o botão "Ver todos" e os cartões continuam com a função deles.
+    (2) a seta virou um triângulo que GIRA ao abrir/fechar, e a lista
+    aparece deslizando ao abrir.
   v165: (1) RESUMO DO MÊS no celular: no lugar do "2026 / DELEGADA" solto,
     cada aba ganhou um cartão com o mês atual. DELEGADA e DEJEM: quantos
     serviços no mês, quanto já foi feito (R$) e quanto falta (R$), com uma
@@ -2295,6 +2301,17 @@ html[data-layout="stack"] .cal-resumo{ display:block; margin:2px 0 14px; padding
 .cr-barra i{ display:block; height:100%; border-radius:4px; background:var(--mc); }
 html.entrando[data-layout="stack"] .cal-resumo{ animation:v158Sobe .5s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion:reduce){ html.entrando[data-layout="stack"] .cal-resumo{ animation:none !important; } }
+
+/* ===== v166: quadro de próximos: faixa inteira clicável + triângulo que gira ===== */
+.px-cab{ cursor:pointer; -webkit-tap-highlight-color:transparent; }
+#proximos.fechado{ cursor:pointer; }
+.px-tit{ pointer-events:none; }
+.px-seta{ color:#aab5c2; transition:transform .28s cubic-bezier(.2,.8,.2,1); transform-origin:50% 50%; }
+#proximos.fechado:active{ transform:scale(.985); }
+#proximos{ transition:transform .1s ease; }
+@keyframes v166Abre{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:none; } }
+#proximos.abrindo .px-grade, #proximos.abrindo .px-vazio{ animation:v166Abre .3s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){ .px-seta{ transition:none; } #proximos.abrindo .px-grade, #proximos.abrindo .px-vazio{ animation:none !important; } }
 </style>
 </head>
 <body>
@@ -2902,7 +2919,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 165;
+const VERSAO_SITE = 166;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -4145,6 +4162,25 @@ function listarProximos(){
   out.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : ini(a).localeCompare(ini(b)));
   return out;
 }
+// Abrir/fechar: vale o toque em toda a faixa do título e, encolhido, na pílula inteira
+// (menos no "Ver todos" e nos cartões). Um ouvinte só, porque o quadro é redesenhado a cada mudança.
+function alternarProximos(){
+  const estavaFechado = proxFechado;
+  proxFechado = !proxFechado; vibrar(8);
+  try{ localStorage.setItem(PROX_FECHADO_KEY, proxFechado ? '1' : '0'); }catch(e){}
+  renderProximos();
+  const el = document.getElementById('proximos'), seta = el && el.querySelector('.px-seta');
+  if(seta){   // o triângulo parte da posição antiga e gira até a nova
+    seta.style.transition = 'none'; seta.style.transform = estavaFechado ? 'rotate(-90deg)' : 'rotate(0deg)';
+    void seta.getBoundingClientRect();
+    seta.style.transition = ''; seta.style.transform = '';
+  }
+  if(el && estavaFechado){ el.classList.remove('abrindo'); void el.offsetWidth; el.classList.add('abrindo'); setTimeout(() => el.classList.remove('abrindo'), 400); }
+}
+document.getElementById('proximos').addEventListener('click', e => {
+  if(e.target.closest('.px-mais, .px-item')) return;
+  if(proxFechado || e.target.closest('.px-cab')) alternarProximos();
+});
 function renderProximos(){
   const el = document.getElementById('proximos');
   if(!el) return;
@@ -4159,13 +4195,8 @@ function renderProximos(){
   const cab = document.createElement('div'); cab.className = 'px-cab';
   const tit = document.createElement('button'); tit.type = 'button'; tit.className = 'px-tit';
   tit.setAttribute('aria-expanded', proxFechado ? 'false' : 'true');
-  tit.innerHTML = '<svg class="px-seta" width="12" height="8" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><h2></h2>';
+  tit.innerHTML = '<svg class="px-seta" width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 3h9L6 10z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><h2></h2>';
   tit.querySelector('h2').textContent = filtro === 'delegada' ? 'Próximas Delegadas' : filtro === 'dejem' ? 'Próximas Dejem' : 'Próximos serviços';
-  tit.addEventListener('click', () => {
-    proxFechado = !proxFechado; vibrar(8);
-    try{ localStorage.setItem(PROX_FECHADO_KEY, proxFechado ? '1' : '0'); }catch(e){}
-    renderProximos();
-  });
   cab.appendChild(tit);
   if(todos.length){
     let soma = 0; todos.forEach(x => { const v = RATES[x.cal] && RATES[x.cal][x.cor]; if(v) soma += v; });
