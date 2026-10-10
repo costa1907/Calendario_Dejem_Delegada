@@ -1,9 +1,24 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 166
+  VERSÃO ATUAL: 168
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v168: (1) DESLIZAR PARA TROCAR DE ABA no celular: arrastar o dedo para a
+    esquerda/direita sobre o calendário passa de SERVIÇO para DELEGADA e
+    DEJEM (não vale com zoom ligado, com dias selecionados ou com janela
+    aberta). O calendário entra deslizando do lado certo. (2) DIA
+    INCOMPLETO: no quadro de próximos, o dia sem local ou sem horário fica
+    com contorno âmbar e o selo "Completar"; tocar nele abre direto a
+    escolha de local e horário. (3) O resumo do mês da aba SERVIÇO mostra o
+    dia da FOLGA MENSAL. (4) Janela de LOGIN (SINCRONIZAR) redesenhada: a
+    marca do app no topo, título conforme a situação (Entrar / Criar conta
+    / Sua conta), campos maiores, botão principal em largura total e os
+    dados técnicos (versão, horários) num bloco discreto. O texto não fala
+    mais em "Firebase".
+  v167: no celular, o quadro de próximos serviços não aparece mais na aba
+    SERVIÇO (só nas abas DELEGADA e DEJEM, cada uma com os seus). No
+    computador, onde os três calendários ficam juntos, o quadro continua.
   v166: quadro PRÓXIMOS SERVIÇOS / PRÓXIMAS DELEGADAS / PRÓXIMAS DEJEM:
     (1) abrir e fechar agora funciona tocando em QUALQUER parte da faixa do
     título (e, quando está encolhido, na pílula inteira), não só em cima do
@@ -2312,6 +2327,41 @@ html.entrando[data-layout="stack"] .cal-resumo{ animation:v158Sobe .5s cubic-bez
 @keyframes v166Abre{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:none; } }
 #proximos.abrindo .px-grade, #proximos.abrindo .px-vazio{ animation:v166Abre .3s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion:reduce){ .px-seta{ transition:none; } #proximos.abrindo .px-grade, #proximos.abrindo .px-vazio{ animation:none !important; } }
+
+/* ===== v168 ===== */
+/* troca de aba deslizando: o calendário entra do lado para onde o dedo foi */
+@keyframes v168Esq{ from{ opacity:0; transform:translateX(42px); } to{ opacity:1; transform:none; } }
+@keyframes v168Dir{ from{ opacity:0; transform:translateX(-42px); } to{ opacity:1; transform:none; } }
+html.troca-aba[data-lado="esq"][data-layout="stack"] .cal-col, html.troca-aba[data-lado="esq"][data-layout="stack"] .summaries-col, html.troca-aba[data-lado="esq"][data-layout="stack"] #proximos{ animation:v168Esq .3s cubic-bezier(.2,.8,.2,1) both; }
+html.troca-aba[data-lado="dir"][data-layout="stack"] .cal-col, html.troca-aba[data-lado="dir"][data-layout="stack"] .summaries-col, html.troca-aba[data-lado="dir"][data-layout="stack"] #proximos{ animation:v168Dir .3s cubic-bezier(.2,.8,.2,1) both; }
+/* dia incompleto no quadro de próximos */
+.px-item.incompleto{ border-color:rgba(255,176,32,.55); border-style:dashed; }
+.px-selo{ margin-left:auto; flex:none; font-size:calc(10px * var(--s)); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#1d1400; background:#ffb020;
+  padding:calc(5px * var(--s)) calc(9px * var(--s)); border-radius:999px; }
+.px-item.incompleto .px-txt{ flex:1; }
+/* folga mensal no resumo do SERVIÇO */
+.cr-folga{ display:flex; align-items:center; gap:8px; margin-top:11px; font-size:12.5px; font-weight:600; color:#dfe6ee; }
+.cr-folga i{ width:10px; height:10px; border-radius:3px; background:var(--verde); flex:none; }
+.cr-folga.vazia{ color:#8793a3; font-weight:500; } .cr-folga.vazia i{ background:#33404f; }
+/* janela de login */
+#syncModalOverlay .modal-box{ width:400px; padding:26px 24px 22px; text-align:center; }
+.sync-marca{ display:flex; justify-content:center; margin:0 0 12px; }
+#syncModalOverlay .modal-title{ font-size:22px; font-weight:800; letter-spacing:-.02em; margin-bottom:6px; }
+#syncModalOverlay .modal-msg{ font-size:13px; margin-bottom:20px; text-wrap:pretty; }
+#syncLoginFields{ text-align:left; }
+#syncModalOverlay .sync-label{ font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:#8793a3; margin-bottom:7px; }
+#syncModalOverlay .modal-input{ height:48px; border-radius:12px; padding:0 14px; font-size:16px; }
+#syncModalOverlay .pass-wrap .modal-input{ padding-right:46px; }
+#syncModalOverlay .sync-status{ text-align:left; margin:0 0 16px; padding:10px 12px; border-radius:11px; background:#0f1215; border:1px solid #232a33; font-size:11.5px; line-height:1.55; color:#8793a3; }
+#syncModalOverlay .sync-status:empty{ display:none; }
+#syncModalOverlay.logado .sync-status{ color:#aab5c2; }
+#syncModalOverlay:not(.logado) .sync-status{ display:none; }
+#syncModalOverlay .modal-actions{ flex-direction:column-reverse; gap:9px; }
+#syncModalOverlay .modal-actions button{ width:100%; min-height:48px; border-radius:12px; font-size:15px; margin:0; }
+#syncModalOverlay .modal-btn-danger{ border-color:#4a2a2e !important; }
+#syncModalOverlay .sync-toggle-modo{ color:var(--dest-claro); }
+html[data-layout="stack"] #syncModalOverlay .modal-box{ padding:24px 18px 18px; }
+@media (prefers-reduced-motion:reduce){ html.troca-aba[data-lado] .cal-col, html.troca-aba[data-lado] .summaries-col, html.troca-aba[data-lado] #proximos{ animation:none !important; } }
 </style>
 </head>
 <body>
@@ -2455,8 +2505,12 @@ html.entrando[data-layout="stack"] .cal-resumo{ animation:v158Sobe .5s cubic-bez
 
 <div class="modal-overlay" id="syncModalOverlay">
   <div class="modal-box">
-    <div class="modal-icon info">&#9729;</div>
-    <h3 class="modal-title" id="syncModalTitle">Sincronização entre aparelhos</h3>
+    <div class="sync-marca"><svg viewBox="0 0 64 64" width="58" height="58" aria-hidden="true">
+      <rect x="4" y="4" width="56" height="56" rx="15" fill="#141a23" stroke="#2c3745" stroke-width="1.5"/>
+      <rect x="4" y="4" width="56" height="17" rx="15" class="ab-topo"/><rect x="4" y="13" width="56" height="8" class="ab-topo"/>
+      <g fill="#33404f"><rect x="13" y="27" width="10" height="10" rx="3"/><rect x="27" y="27" width="10" height="10" rx="3"/><rect x="41" y="41" width="10" height="10" rx="3"/><rect x="13" y="41" width="10" height="10" rx="3"/></g>
+      <rect x="41" y="27" width="10" height="10" rx="3" fill="#00B0F0"/><rect x="27" y="41" width="10" height="10" rx="3" fill="#FF2A3A"/></svg></div>
+    <h3 class="modal-title" id="syncModalTitle">Entrar</h3>
     <p class="modal-msg" id="syncModalMsg">Entre com o seu e-mail e senha do Firebase. Isso é feito uma vez por aparelho: depois, tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real. Conecte primeiro o aparelho que tem os dados mais atualizados.</p>
     <div id="syncLoginFields">
       <label class="sync-label" for="syncEmailInput">E-mail</label>
@@ -2919,7 +2973,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 166;
+const VERSAO_SITE = 168;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3208,7 +3262,9 @@ function atualizarModalSync(){
     ? 'Conectado como ' + (syncUser.email || 'sua conta') + '. Tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real, sem precisar fazer nada.'
     : syncModoCriarConta
       ? 'Crie uma conta com e-mail e senha para ter o seu próprio calendário, separado do de qualquer outra pessoa. Depois, use esse mesmo login nos seus outros aparelhos para sincronizar.'
-      : 'Entre com o seu e-mail e senha do Firebase. Isso é feito uma vez por aparelho: depois, tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real. Conecte primeiro o aparelho que tem os dados mais atualizados.';
+      : 'Entre com o seu e-mail e senha. Isso é feito uma vez por aparelho: depois, tudo que você marcar aqui aparece nos seus outros aparelhos em tempo real. Conecte primeiro o aparelho que tem os dados mais atualizados.';
+  document.getElementById('syncModalTitle').textContent = logado ? 'Sua conta' : syncModoCriarConta ? 'Criar conta' : 'Entrar';
+  document.getElementById('syncModalOverlay').classList.toggle('logado', logado);
   document.getElementById('syncPassConfirmWrap').style.display = (!logado && syncModoCriarConta) ? '' : 'none';
   document.getElementById('syncToggleModoBtn').style.display = logado ? 'none' : '';
   document.getElementById('syncToggleModoBtn').textContent = syncModoCriarConta ? 'Já tem conta? Entrar' : 'Ainda não tem conta? Criar uma';
@@ -3217,7 +3273,7 @@ function atualizarModalSync(){
   let texto = '';
   if(!window.SyncBackend){
     texto = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey)
-      ? 'Carregando o Firebase... (se demorar, confira a internet)'
+      ? 'Carregando a sincronização... (se demorar, confira a internet)'
       : 'O Firebase ainda não foi configurado neste site (bloco CONFIGURAÇÃO DO FIREBASE).';
     st.classList.add('erro');
   } else if(syncEstado === 'erro'){
@@ -3412,6 +3468,35 @@ function setTab(tab){
 document.querySelectorAll('#tabs button').forEach(b => {
   b.addEventListener('click', () => setTab(b.dataset.tab));
 });
+// Deslizar o dedo para o lado troca de aba (só no celular)
+(function(){
+  const ORDEM = ['servico','delegada','dejem'];
+  let ini = null;
+  const zoomLigado = () => { try{ return !!(window.visualViewport && window.visualViewport.scale > 1.02); }catch(e){ return false; } };
+  document.addEventListener('touchstart', e => {
+    ini = null;
+    if(e.touches.length !== 1 || document.documentElement.dataset.layout !== 'stack') return;
+    if(zoomLigado() || document.querySelector('.modal-overlay.show') || document.getElementById('abertura')) return;
+    if(!e.target.closest || !e.target.closest('#calendars, #proximos')) return;
+    const t = e.touches[0];
+    if(t.clientX < 24 || t.clientX > window.innerWidth - 24) return;   // bordas: gesto de voltar do iPhone
+    ini = { x: t.clientX, y: t.clientY, t: Date.now() };
+  }, { passive:true });
+  document.addEventListener('touchmove', e => { if(ini && e.touches.length > 1) ini = null; }, { passive:true });
+  document.addEventListener('touchend', e => {
+    if(!ini) return;
+    const a = ini; ini = null;
+    const t = e.changedTouches[0], dx = t.clientX - a.x, dy = t.clientY - a.y;
+    if(Date.now() - a.t > 600 || Math.abs(dx) < 70 || Math.abs(dy) > 45 || Math.abs(dx) < Math.abs(dy) * 2.2) return;
+    if(selection.size > 0 || zoomLigado()) return;
+    const i = ORDEM.indexOf(activeTab) + (dx < 0 ? 1 : -1);
+    if(i < 0 || i >= ORDEM.length) return;
+    document.documentElement.dataset.lado = dx < 0 ? 'esq' : 'dir';
+    vibrar(8);
+    setTab(ORDEM[i]);
+    setTimeout(() => { delete document.documentElement.dataset.lado; }, 450);
+  }, { passive:true });
+})();
 
 // Alinha a coluna das tabelas pixel a pixel com o calendário ao lado (só no
 // modo computador): mede onde os meses começam (abaixo do título) e a altura
@@ -3666,6 +3751,14 @@ function buildResumo(cal){
     nums.appendChild(d);
   });
   el.querySelector('.cr-barra i').style.width = (n ? Math.round(feitos / n * 100) : 0) + '%';
+  if(cal.key === 'servico' && anoAtual){
+    const folgas = Object.keys(data).filter(k => k.indexOf(pref) === 0 && data[k] === 'verde').map(k => Number(k.slice(-2))).sort((a, b) => a - b);
+    const f = document.createElement('div'); f.className = 'cr-folga' + (folgas.length ? '' : ' vazia');
+    f.innerHTML = '<i></i><span></span>';
+    f.querySelector('span').textContent = !folgas.length ? 'Folga mensal ainda não marcada neste mês'
+      : 'Folga mensal: ' + (folgas.length === 1 ? 'dia ' + folgas[0] : 'dias ' + folgas.slice(0, -1).join(', ') + ' e ' + folgas[folgas.length - 1]);
+    el.appendChild(f);
+  }
   return el;
 }
 
@@ -4186,6 +4279,8 @@ function renderProximos(){
   if(!el) return;
   if(semConta()){ el.hidden = true; el.innerHTML = ''; return; }
   const stack = document.documentElement.dataset.layout === 'stack';
+  // celular: na aba SERVIÇO o quadro não aparece
+  if(stack && !LOCAIS[activeTab]){ el.hidden = true; el.innerHTML = ''; return; }
   // celular: a aba DELEGADA mostra só Delegada e a aba DEJEM só Dejem (SERVIÇO e computador: os dois)
   const filtro = (stack && LOCAIS[activeTab]) ? activeTab : null;
   const todos = listarProximos().filter(x => !filtro || x.cal === filtro);
@@ -4235,7 +4330,13 @@ function renderProximos(){
       + (filtro ? (falta > 1 ? ' · em ' + falta + ' dias' : '') : ' · ' + (x.cal === 'dejem' ? 'DEJEM' : 'DELEGADA'));
     const l = b.querySelector('.px-l'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
     b.querySelector('.px-h').textContent = temHora ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
-    b.addEventListener('click', () => { vibrar(8); abrirFicha(x.k); });
+    const incompleto = !loc || !temHora;
+    if(incompleto){
+      b.classList.add('incompleto');
+      const selo = document.createElement('span'); selo.className = 'px-selo'; selo.textContent = 'Completar'; b.appendChild(selo);
+    }
+    // dia incompleto: vai direto para a escolha de local e horário
+    b.addEventListener('click', () => { vibrar(8); if(incompleto) abrirServico({ modo:'editar', keys:[x.k], cal: x.cal, cor: x.cor }); else abrirFicha(x.k); });
     grade.appendChild(b);
   });
   el.appendChild(grade);
