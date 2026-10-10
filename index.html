@@ -1,9 +1,13 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 168
+  VERSÃO ATUAL: 169
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v169: DEJEM (Metrô) com dois horários fixos na janela "Local e horário",
+    igual à DELEGADA: 07:00 - 15:00 e 15:00 - 23:00. Um toque escolhe o
+    horário; os campos Início/Término continuam ali para um horário
+    diferente.
   v168: (1) DESLIZAR PARA TROCAR DE ABA no celular: arrastar o dedo para a
     esquerda/direita sobre o calendário passa de SERVIÇO para DELEGADA e
     DEJEM (não vale com zoom ligado, com dias selecionados ou com janela
@@ -2973,7 +2977,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 168;
+const VERSAO_SITE = 169;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -4062,7 +4066,8 @@ const LOCAIS = {
 };
 Object.keys(LOCAIS).forEach(c => LOCAIS[c].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true })));
 // horários prontos por cor (DELEGADA). Na DEJEM os atalhos são os horários que a pessoa mais usa.
-const HORARIOS_COR = { rosa: [['06:00','14:00'],['14:00','22:00']], roxo: [['19:00','03:00']], dourado: [['22:00','06:00']] };
+const HORARIOS_COR = { rosa: [['06:00','14:00'],['14:00','22:00']], roxo: [['19:00','03:00']], dourado: [['22:00','06:00']],
+  vermelho: [['07:00','15:00'],['15:00','23:00']] };   // vermelho = DEJEM (Metrô)
 const HORAS_PADRAO = 8;
 // cor de destaque das janelas: c = cor do dia, t = tom legível no fundo escuro, claro = texto escuro por cima
 const ACENTO = {
