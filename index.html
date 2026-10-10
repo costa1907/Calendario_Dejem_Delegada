@@ -1,9 +1,19 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 158
+  VERSÃO ATUAL: 159
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v159: (1) ÍCONES nos botões do menu: calendário com "+" (CRIAR ANO), setas
+    em ciclo (ESCALA), cifrão (EDITAR VALORES), câmera (PRINT), seta para
+    cima (EXPORTAR) e seta para baixo (IMPORTAR). No celular o ícone fica
+    em cima do texto. (2) Quadro PRÓXIMOS SERVIÇOS: lista os próximos dias
+    de DELEGADA e DEJEM a partir de hoje, em ordem de data, com local e
+    horário; mostra quantos serviços faltam e o valor somado. Tocar numa
+    linha abre a ficha daquele dia. No celular fica acima do calendário
+    (3 linhas); no computador, abaixo dos calendários (5 cartões). "Ver
+    todos" abre a lista inteira. Não sai no PRINT. (3) "Selecionar dia" na
+    ficha agora leva para a aba/ano daquele dia quando ele não está na tela.
   v158: VISUAL NOVO do site inteiro (só aparência: nenhum dado, tamanho de
     calendário ou funcionamento mudou). Fundo azul-grafite com brilho suave,
     fonte Inter em tudo, barra de menu e legenda em "vidro", botões com
@@ -2046,6 +2056,58 @@ html.imprimindo .month h3{ box-shadow:none !important; }
 html.imprimindo table.dowtable td{ box-shadow:none !important; text-shadow:none !important; }
 html.imprimindo .summary caption{ box-shadow:none !important; }
 html.imprimindo .summary tr.total td.rs{ text-shadow:none !important; }
+
+/* ===== v159: ícones do menu + quadro PRÓXIMOS SERVIÇOS ===== */
+.topbar button:not(.year-picker-btn){ display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+.topbar button .ic{ width:15px; height:15px; flex:none; opacity:.85; transition:transform .2s ease, opacity .2s ease; }
+@media (hover:hover){ .topbar button:hover .ic{ opacity:1; transform:translateY(-1px) scale(1.08); } }
+html[data-layout="stack"] .topbar button:not(.year-picker-btn):not(.sync-btn){ flex-direction:column; gap:5px; min-height:58px; padding:8px 2px; font-size:10px; letter-spacing:.02em; }
+html[data-layout="stack"] .topbar button .ic{ width:19px; height:19px; }
+html[data-layout="stack"] .year-picker-btn{ min-height:58px; }
+@media (min-width:560px){
+  html[data-layout="stack"] .topbar button:not(.year-picker-btn):not(.sync-btn){ flex-direction:row; gap:7px; min-height:44px; padding:9px 14px; font-size:12px; }
+  html[data-layout="stack"] .topbar button .ic{ width:15px; height:15px; }
+  html[data-layout="stack"] .year-picker-btn{ min-height:44px; }
+}
+#proximos{ margin:calc(18px * var(--s)) 0 0; padding:calc(14px * var(--s)) calc(16px * var(--s)) calc(16px * var(--s)); background:var(--vidro); border:1px solid var(--linha);
+  border-radius:16px; box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px -18px rgba(0,0,0,.8); font-family:'Inter','Segoe UI',Arial,sans-serif; }
+#proximos[hidden]{ display:none; }
+.px-cab{ display:flex; align-items:center; gap:calc(12px * var(--s)); margin:0 0 calc(12px * var(--s)); flex-wrap:wrap; }
+.px-cab h2{ margin:0; font-size:calc(12px * var(--s)); font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:#cfd8e3; }
+.px-res{ font-size:calc(12.5px * var(--s)); color:#8793a3; }
+.px-res b{ color:#dfe6ee; font-weight:600; } .px-res i{ font-style:normal; font-weight:700; color:#7ee04a; font-variant-numeric:tabular-nums; }
+.px-mais{ margin-left:auto; background:transparent; border:1px solid var(--linha2); border-radius:999px; color:#cfd8e3; font-family:inherit; font-weight:600;
+  font-size:calc(12px * var(--s)); padding:calc(6px * var(--s)) calc(13px * var(--s)); cursor:pointer; min-height:32px; }
+@media (hover:hover){ .px-mais:hover{ border-color:#5b6b80; color:#fff; background:rgba(255,255,255,.05); } }
+.px-vazio{ margin:0; font-size:calc(13px * var(--s)); line-height:1.5; color:#8793a3; }
+.px-grade{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:calc(10px * var(--s)); }
+.px-item{ display:flex; align-items:center; gap:calc(11px * var(--s)); text-align:left; min-width:0; padding:calc(9px * var(--s)); background:linear-gradient(180deg, #151b25, #10151d);
+  border:1px solid var(--linha); border-radius:13px; color:#e8edf3; font-family:inherit; cursor:pointer; position:relative; overflow:hidden;
+  transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+.px-item::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--acc); }
+@media (hover:hover){ .px-item:hover{ transform:translateY(-2px); border-color:var(--acc-t); box-shadow:0 14px 26px -16px var(--acc); } }
+.px-item:active{ transform:scale(.98); }
+.px-item:focus-visible, .px-mais:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+.px-item.hoje{ border-color:#ffb020; box-shadow:0 0 0 1px rgba(255,176,32,.35), 0 0 18px -6px rgba(255,176,32,.7); }
+.px-dia{ flex:none; width:calc(46px * var(--s)); padding:calc(5px * var(--s)) 0 calc(6px * var(--s)); margin-left:3px; border-radius:11px; background:var(--acc); color:#fff; text-align:center;
+  box-shadow:0 0 0 1px rgba(255,255,255,.16) inset, 0 8px 18px -10px var(--acc); }
+.px-dia.claro{ color:#16130a; }
+.px-dia i{ display:block; font-style:normal; font-size:calc(9px * var(--s)); font-weight:700; letter-spacing:.12em; opacity:.92; }
+.px-dia b{ display:block; font-size:calc(20px * var(--s)); line-height:1.05; font-weight:800; font-variant-numeric:tabular-nums; }
+.px-txt{ min-width:0; display:flex; flex-direction:column; gap:calc(2px * var(--s)); }
+.px-q{ font-size:calc(10px * var(--s)); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--acc-t); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.px-l{ font-size:calc(13.5px * var(--s)); font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.px-l.vazio{ color:#8793a3; font-weight:500; }
+.px-h{ font-size:calc(12px * var(--s)); color:#aab5c2; font-variant-numeric:tabular-nums; }
+html[data-layout="stack"] #proximos{ margin:0 0 14px; padding:12px; }
+html[data-layout="stack"] .px-grade{ grid-template-columns:1fr; gap:8px; }
+html[data-layout="stack"] .px-cab h2{ font-size:11.5px; letter-spacing:.16em; }
+html[data-layout="stack"] .px-res{ flex-basis:100%; order:3; }
+html[data-layout="stack"] .px-l{ font-size:15px; } html[data-layout="stack"] .px-h{ font-size:13px; } html[data-layout="stack"] .px-q{ font-size:10.5px; }
+html[data-layout="stack"] .px-dia{ width:50px; }
+@media (min-width:560px){ html[data-layout="stack"] .px-grade{ grid-template-columns:1fr 1fr; } }
+html.entrando #proximos{ animation:v158Sobe .5s .12s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){ html.entrando #proximos{ animation:none !important; } .px-item, .topbar button .ic{ transition:none !important; } }
 </style>
 </head>
 <body>
@@ -2059,12 +2121,12 @@ html.imprimindo .summary tr.total td.rs{ text-shadow:none !important; }
     </button>
     <div class="year-picker-menu" id="yearPickerMenu" role="listbox"></div>
   </div>
-  <button id="addYearBtn">+ CRIAR ANO</button>
-  <button id="escalaBtn">ESCALA</button>
-  <button id="editRatesBtn">EDITAR VALORES</button>
-  <button id="printBtn">PRINT (IMAGEM)</button>
-  <button id="exportBtn">EXPORTAR</button>
-  <button id="importBtn">IMPORTAR</button>
+  <button id="addYearBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.500 15.500h5"/></svg><span>CRIAR ANO</span></button>
+  <button id="escalaBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.300-4.500L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.300 4.500L20 16"/><path d="M20 20v-4h-4"/></svg><span>ESCALA</span></button>
+  <button id="editRatesBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.800 9.300c-.5-.9-1.500-1.400-2.800-1.400-1.700 0-2.800.8-2.800 2 0 2.800 5.600 1.400 5.600 4.200 0 1.200-1.200 2-2.800 2-1.400 0-2.500-.6-3-1.600M12 6v12"/></svg><span>EDITAR VALORES</span></button>
+  <button id="printBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.500-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.500" r="3.500"/></svg><span>PRINT (IMAGEM)</span></button>
+  <button id="exportBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 15V4M8 8l4-4 4 4"/></svg><span>EXPORTAR</span></button>
+  <button id="importBtn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 4v11M8 11l4 4 4-4"/></svg><span>IMPORTAR</span></button>
   <button id="syncBtn" class="sync-btn" data-estado="off"><span class="live-dot"></span><span id="syncBtnTxt">SINCRONIZAR</span></button>
   <input type="file" id="importFile" accept="application/json" style="display:none">
 </div>
@@ -2098,6 +2160,7 @@ html.imprimindo .summary tr.total td.rs{ text-shadow:none !important; }
 </div>
 <div class="escala-dica" id="dicaEscala" hidden>Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.</div>
 <div class="calendars" id="calendars"></div>
+<section id="proximos" aria-label="Próximos serviços" hidden></section>
 <div id="barraSel" role="region" aria-live="polite" aria-label="Seleção de dias" hidden></div>
 </div><!-- /.page-wrap -->
 
@@ -2615,7 +2678,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 158;
+const VERSAO_SITE = 159;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3071,6 +3134,13 @@ function applyLayout(forcar){
     s = Math.max(SCALE_MIN, Math.min(disponivel / NATURAL_W, SCALE_MAX));
   }
   root.style.setProperty('--s', s.toFixed(4));
+  // PRÓXIMOS SERVIÇOS: acima do calendário no celular, abaixo no computador
+  { const px = document.getElementById('proximos'), cals = document.getElementById('calendars');
+    if(px && cals){
+      if(desktop){ if(cals.nextElementSibling !== px) cals.after(px); }
+      else if(px.nextElementSibling !== cals) cals.before(px);
+      if(typeof renderProximos === 'function' && typeof LOCAIS !== 'undefined'){ try{ renderProximos(); }catch(e){} }
+    } }
   alignSummaries();
 }
 
@@ -3296,6 +3366,7 @@ function render(){
   });
   container.appendChild(summariesCol);
 
+  renderProximos();
   alignSummaries();
 }
 
@@ -3768,6 +3839,70 @@ document.getElementById('servPular').addEventListener('click', () => concluirSer
 document.getElementById('servCancelar').addEventListener('click', () => { const ed = sv && sv.modo === 'editar' ? sv.keys[0] : null; fecharServico(); if(ed) abrirFicha(ed); });
 servOverlay.addEventListener('click', e => { if(e.target === servOverlay) fecharServico(); });
 
+
+// ---------- Quadro PRÓXIMOS SERVIÇOS (v159) ----------
+let proxAberto = false;
+function listarProximos(){
+  const hoje = hojeStr(), out = [];
+  Object.keys(data).forEach(k => {
+    const p = k.split('|');
+    if(!LOCAIS[p[0]] || !p[2] || p[2] < hoje) return;
+    out.push({ k: k, cal: p[0], date: p[2], cor: data[k], det: detalhes[k] || null });
+  });
+  const ini = x => (x.det && x.det.i) || '99';
+  out.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : ini(a).localeCompare(ini(b)));
+  return out;
+}
+function renderProximos(){
+  const el = document.getElementById('proximos');
+  if(!el) return;
+  if(semConta()){ el.hidden = true; el.innerHTML = ''; return; }
+  const todos = listarProximos(), stack = document.documentElement.dataset.layout === 'stack';
+  const limite = stack ? 3 : 5, lista = proxAberto ? todos : todos.slice(0, limite);
+  el.hidden = false; el.innerHTML = '';
+  const cab = document.createElement('div'); cab.className = 'px-cab';
+  const tit = document.createElement('h2'); tit.textContent = 'Próximos serviços'; cab.appendChild(tit);
+  if(todos.length){
+    let soma = 0; todos.forEach(x => { const v = RATES[x.cal] && RATES[x.cal][x.cor]; if(v) soma += v; });
+    const res = document.createElement('span'); res.className = 'px-res';
+    res.innerHTML = '<b></b> · <i></i>';
+    res.querySelector('b').textContent = todos.length + (todos.length === 1 ? ' serviço' : ' serviços');
+    res.querySelector('i').textContent = 'R$ ' + fmtBRL(soma);
+    cab.appendChild(res);
+  }
+  if(todos.length > limite){
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'px-mais';
+    bt.textContent = proxAberto ? 'Mostrar menos' : 'Ver todos';
+    bt.addEventListener('click', () => { proxAberto = !proxAberto; renderProximos(); });
+    cab.appendChild(bt);
+  }
+  el.appendChild(cab);
+  if(!todos.length){
+    const v = document.createElement('p'); v.className = 'px-vazio';
+    v.textContent = 'Nenhum serviço marcado de hoje em diante. Pinte um dia na DELEGADA ou na DEJEM e ele aparece aqui.';
+    el.appendChild(v); return;
+  }
+  const grade = document.createElement('div'); grade.className = 'px-grade';
+  const hoje = dataDeStr(hojeStr());
+  lista.forEach(x => {
+    const d = dataDeStr(x.date), a = ACENTO[x.cor] || { c:'#00B0F0', t:'#6fd3ff' }, falta = diasEntreDatas(hoje, d);
+    const loc = localDoDetalhe(x.cal, x.det), temHora = !!(x.det && x.det.i && x.det.f);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'px-item' + (falta === 0 ? ' hoje' : '');
+    b.style.setProperty('--acc', a.c); b.style.setProperty('--acc-t', a.t);
+    b.innerHTML = '<span class="px-dia' + (a.claro ? ' claro' : '') + '"><i></i><b></b></span><span class="px-txt"><span class="px-q"></span><span class="px-l"></span><span class="px-h"></span></span>';
+    b.querySelector('.px-dia i').textContent = MESES[d.getMonth()].slice(0,3);
+    b.querySelector('.px-dia b').textContent = d.getDate();
+    const sem = SEMANA[d.getDay()].slice(0,3);
+    b.querySelector('.px-q').textContent = (falta === 0 ? 'Hoje' : falta === 1 ? 'Amanhã' : sem.charAt(0).toUpperCase() + sem.slice(1) + (d.getFullYear() !== hoje.getFullYear() ? ' · ' + d.getFullYear() : ''))
+      + ' · ' + (x.cal === 'dejem' ? 'DEJEM' : 'DELEGADA');
+    const l = b.querySelector('.px-l'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
+    b.querySelector('.px-h').textContent = temHora ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
+    b.addEventListener('click', () => { vibrar(8); abrirFicha(x.k); });
+    grade.appendChild(b);
+  });
+  el.appendChild(grade);
+}
+
 // ---------- Ficha do serviço (toque num dia já pintado) ----------
 const fichaOverlay = document.getElementById('fichaOverlay');
 const fichaApagarBtn = document.getElementById('fichaApagar');
@@ -3820,6 +3955,9 @@ document.getElementById('fichaEditar').addEventListener('click', () => {
 document.getElementById('fichaSelecionar').addEventListener('click', () => {
   if(!fichaKey) return;
   const k = fichaKey, p = k.split('|'); fecharFicha();
+  // dia de outro ano / outra aba (aberto pelo quadro PRÓXIMOS SERVIÇOS): leva até ele
+  if(Number(p[1]) !== currentYear && YEARS.includes(Number(p[1]))){ currentYear = Number(p[1]); popularYearSelect(); render(); }
+  if(document.documentElement.dataset.layout === 'stack' && activeTab !== p[0]) setTab(p[0]);
   selection.add(k);
   const td = document.querySelector('td[data-cal="' + p[0] + '"][data-date="' + p[2] + '"]');
   if(td) td.classList.add('selected');
@@ -4281,8 +4419,9 @@ printOverlay.addEventListener('click', e => { if(e.target === printOverlay) fech
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && printOverlay.classList.contains('show')) fecharModalPrint(); });
 document.getElementById('printBtn').addEventListener('click', async () => {
   const btn = document.getElementById('printBtn');
-  const textoOriginal = btn.textContent;
-  btn.textContent = 'GERANDO...';
+  const rotuloPrint = btn.querySelector('span');
+  const textoOriginal = rotuloPrint.textContent;
+  rotuloPrint.textContent = 'GERANDO...';
   btn.disabled = true;
   const cobertura = document.getElementById('gerandoImagem');
   const rolagem = window.scrollY, rolagemX = window.scrollX;
@@ -4300,7 +4439,7 @@ document.getElementById('printBtn').addEventListener('click', async () => {
     await showAlert('Não foi possível gerar a imagem. Tente novamente.', 'Erro');
   }finally{
     cobertura.classList.remove('show');
-    btn.textContent = textoOriginal;
+    rotuloPrint.textContent = textoOriginal;
     btn.disabled = false;
   }
 });
