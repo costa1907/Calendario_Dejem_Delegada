@@ -1,9 +1,23 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 156
+  VERSÃO ATUAL: 157
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v157: LOCAL E HORÁRIO do serviço na DELEGADA e na DEJEM. (1) Ao tocar numa
+    cor da DELEGADA ou da DEJEM com dias selecionados, abre a janela "Local
+    e horário": escolhe a área (DELEGADA, com a AISP) ou a estação do Metrô
+    (DEJEM, com a AISP) e o horário, e os dias são pintados já com essa
+    informação. Na DELEGADA os horários já vêm prontos conforme a cor
+    (06-14 / 14-22, 19-03, 22-06); na DEJEM o término é sugerido com 8h e os
+    horários mais usados viram atalhos. Dá para "Pintar sem informar".
+    (2) Tocar num dia JÁ PINTADO da DELEGADA/DEJEM abre a FICHA DO SERVIÇO:
+    data, quanto falta, local, AISP, horário, duração, valor e a situação na
+    escala de SERVIÇO, com os botões Editar, Ver no mapa (estações),
+    Selecionar dia (para trocar a cor pela paleta) e Apagar. (3) Dias com
+    local informado ganham um pontinho branco no canto (não sai no PRINT).
+    (4) Local e horário sincronizam entre os aparelhos e entram no
+    EXPORTAR/IMPORTAR. O SERVIÇO continua igual.
   v156: o link "blob:https://..." ainda aparecia usando "Salvar PNG" e
     depois compartilhando pelo WhatsApp — esse botão abre o arquivo num
     link temporário numa aba à parte, e usar o Compartilhar do PRÓPRIO
@@ -1750,6 +1764,117 @@ html.imprimindo table.dowtable td.hoje{ box-shadow:none !important; font-weight:
 html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:none; }
 .modal-overlay{ overscroll-behavior:contain; }
 .modal-box{ overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+
+/* ===== v157: Local e horário do serviço + Ficha do serviço ===== */
+.sv-overlay{ background:rgba(4,6,9,.72); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+.sv-box, html[data-layout="stack"] .sv-box{ padding:0; }
+.sv-box{ --acc:#00B0F0; --acc-t:#6fd3ff; font-family:'Inter','Segoe UI',Arial,sans-serif; width:460px; background:#14171b; border:1px solid #2a3038;
+  border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.6); color:#e9eef4; -webkit-font-smoothing:antialiased; scrollbar-width:none; }
+.sv-box::-webkit-scrollbar{ display:none; }
+.sv-box [hidden]{ display:none !important; }
+.sv-box button{ font-family:inherit; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.sv-grab{ display:none; width:38px; height:4px; border-radius:4px; background:#3a424d; margin:0 auto 14px; }
+.sv-head{ padding:20px 22px 16px; border-bottom:1px solid #232930;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0)); border-radius:18px 18px 0 0; }
+.sv-eyebrow{ display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--acc-t); }
+.sv-dot{ width:10px; height:10px; border-radius:3px; background:var(--acc); box-shadow:0 0 0 1px rgba(255,255,255,.28), 0 0 12px var(--acc); flex:none; }
+.sv-title{ margin:10px 0 4px; font-size:19px; line-height:1.2; font-weight:700; color:#fff; letter-spacing:-.01em; text-wrap:balance; }
+.sv-sub{ margin:0; font-size:13px; line-height:1.45; color:#9aa7b6; }
+.sv-body{ padding:16px 22px 6px; }
+.sv-sec{ display:flex; align-items:center; gap:9px; margin:0 0 10px; font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#c6d0db; }
+.sv-sec + .sv-grid, .sv-sec + .sv-chips{ margin-top:0; }
+.sv-num{ width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+  background:#222a33; color:#c6d0db; flex:none; letter-spacing:0; }
+.sv-num.ok{ background:var(--acc); color:#fff; }
+.sv-sec em{ margin-left:auto; font-style:normal; font-weight:600; letter-spacing:0; text-transform:none; font-size:12.5px; color:var(--acc-t);
+  max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sv-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:0 0 20px; }
+.sv-tile{ text-align:left; background:#1b1f25; border:1px solid #2b323b; border-radius:12px; padding:9px 12px; min-height:54px; color:#e9eef4;
+  cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:3px; transition:border-color .12s ease, background .12s ease, transform .1s ease; }
+.sv-tile b{ font-size:13.5px; font-weight:600; line-height:1.25; overflow-wrap:anywhere; }
+.sv-tile small{ font-size:11px; color:#8794a3; font-variant-numeric:tabular-nums; letter-spacing:.03em; }
+.sv-tile:active{ transform:scale(.97); }
+@media (hover:hover){ .sv-tile:hover{ border-color:#465160; background:#20252c; } }
+.sv-tile.on{ border-color:var(--acc-t); background:#222a36; background:color-mix(in srgb, var(--acc) 24%, #1b1f25); box-shadow:0 0 0 1px var(--acc-t) inset; }
+.sv-tile.on small{ color:#d5deE8; }
+.sv-tile.outro{ border-style:dashed; }
+.sv-tile:focus-visible, .sv-chip:focus-visible, .sv-foot button:focus-visible, .fc-acoes button:focus-visible, .fc-acoes a:focus-visible, .fc-x:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+.sv-outro{ margin:-10px 0 20px; height:46px; border-radius:12px; background:#0f1215; border-color:#2b323b; font-size:16px; padding:0 12px; font-family:inherit; }
+.sv-chips{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+.sv-chips:empty{ display:none; }
+.sv-chip{ background:#1b1f25; border:1px solid #2b323b; border-radius:999px; padding:9px 14px; min-height:40px; color:#e9eef4; font-size:14px; font-weight:600;
+  font-variant-numeric:tabular-nums; cursor:pointer; transition:border-color .12s ease, background .12s ease, transform .1s ease; }
+.sv-chip:active{ transform:scale(.96); }
+.sv-chip.on{ border-color:var(--acc-t); background:#222a36; background:color-mix(in srgb, var(--acc) 24%, #1b1f25); box-shadow:0 0 0 1px var(--acc-t) inset; }
+.sv-horas{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sv-campo{ display:flex; flex-direction:column; gap:6px; font-size:11px; font-weight:700; color:#8794a3; text-transform:uppercase; letter-spacing:.07em; min-width:0; }
+.sv-campo input{ color-scheme:dark; -webkit-appearance:none; appearance:none; display:block; height:48px; width:100%; min-width:0; max-width:100%; box-sizing:border-box;
+  background:#0f1215; border:1px solid #2b323b; border-radius:12px; color:#fff; font-family:inherit; font-size:19px; font-weight:600; line-height:46px;
+  font-variant-numeric:tabular-nums; padding:0 12px; text-align:left; outline:none; margin:0; }
+.sv-campo input::-webkit-date-and-time-value{ text-align:left; min-height:0; }
+.sv-campo input:focus{ border-color:var(--acc-t); }
+.sv-dur{ margin:10px 0 0; min-height:18px; font-size:12.5px; line-height:1.4; color:#9aa7b6; }
+.sv-foot{ position:sticky; bottom:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; margin-top:14px; padding:14px 22px 18px;
+  background:linear-gradient(180deg, rgba(20,23,27,0), #14171b 16px); border-radius:0 0 18px 18px; }
+.sv-foot button{ border:none; border-radius:12px; min-height:46px; padding:0 20px; font-size:14.5px; font-weight:700; cursor:pointer; }
+.sv-skip{ margin-right:auto; background:transparent; color:#9aa7b6; padding:0 4px !important; font-weight:600 !important; font-size:13px !important;
+  text-decoration:underline; text-underline-offset:3px; text-decoration-color:#4a5461; }
+.sv-cancel{ background:#232830; color:#dbe3ec; }
+.sv-ok{ background:var(--acc); color:#fff; box-shadow:0 6px 18px -6px var(--acc); min-width:128px; }
+.sv-ok.claro{ color:#16130a; }
+.sv-ok:disabled{ background:#262c34; color:#6b7684; box-shadow:none; cursor:default; }
+@media (max-width:430px){ .sv-skip{ flex:1 1 100%; margin:0; text-align:center; min-height:34px !important; order:3; } .sv-cancel{ flex:1; } .sv-ok{ flex:1.6; } }
+
+/* Ficha do serviço */
+.fc-hero{ display:flex; gap:14px; align-items:center; padding:20px 20px 18px; border-bottom:1px solid #232930; border-radius:18px 18px 0 0; position:relative;
+  background:radial-gradient(120% 140% at 0% 0%, rgba(255,255,255,.07), rgba(255,255,255,0) 60%), #171b20;
+  background:radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--acc) 34%, transparent), transparent 62%), #171b20; }
+.fc-tile{ flex:none; width:72px; border-radius:16px; background:var(--acc); color:#fff; text-align:center; padding:8px 0 9px;
+  box-shadow:0 10px 26px -10px var(--acc), 0 0 0 1px rgba(255,255,255,.16) inset; }
+.fc-tile.claro{ color:#16130a; }
+.fc-tile span{ display:block; font-size:10.5px; font-weight:700; letter-spacing:.12em; opacity:.9; }
+.fc-tile b{ display:block; font-size:32px; line-height:1.05; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.fc-hero-txt{ min-width:0; flex:1; padding-right:30px; }
+.fc-data{ margin:7px 0 7px; font-size:17px; line-height:1.25; font-weight:700; color:#fff; letter-spacing:-.01em; text-wrap:balance; }
+.fc-quando{ display:inline-block; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.09); color:#dbe3ec; }
+.fc-quando.hoje{ background:#ffb020; color:#1d1400; }
+.fc-x{ position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:none; background:rgba(255,255,255,.08); color:#cfd8e2;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.fc-body{ padding:6px 20px 0; }
+.fc-item{ display:flex; gap:14px; align-items:flex-start; padding:15px 0; border-bottom:1px solid #20262d; }
+.fc-ico{ flex:none; width:38px; height:38px; border-radius:11px; background:#1d2229; border:1px solid #2b323b; color:var(--acc-t); display:flex; align-items:center; justify-content:center; }
+.fc-item > div{ min-width:0; flex:1; }
+.fc-rot{ display:block; font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#8794a3; margin-bottom:3px; }
+.fc-val{ display:block; font-size:18px; line-height:1.25; font-weight:700; color:#fff; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.fc-val.vazio{ font-size:15px; font-weight:600; color:#8794a3; }
+.fc-det{ display:block; margin-top:3px; font-size:12.5px; color:#9aa7b6; font-variant-numeric:tabular-nums; }
+.fc-duo{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 0 4px; }
+.fc-stat{ background:#1a1e24; border:1px solid #262d35; border-radius:12px; padding:10px 12px; min-width:0; }
+.fc-stat b{ display:block; font-size:15px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+.fc-stat b.verde{ color:#7ee04a; }
+.fc-acoes{ position:sticky; bottom:0; display:flex; flex-direction:column; gap:10px; padding:16px 20px 18px; background:linear-gradient(180deg, rgba(20,23,27,0), #14171b 14px); border-radius:0 0 18px 18px; }
+.fc-acoes button, .fc-acoes a{ border:none; border-radius:12px; min-height:46px; padding:0 16px; font-size:14.5px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; font-family:inherit; box-sizing:border-box; }
+.fc-linha{ display:flex; gap:10px; }
+.fc-linha > *{ flex:1; }
+.fc-sec{ background:#232830; color:#dbe3ec; }
+.fc-perigo{ background:transparent; color:#ff7b7b; box-shadow:0 0 0 1px #4a2a2e inset; }
+.fc-perigo.certeza{ background:#d64545; color:#fff; box-shadow:none; }
+/* celular/tablet: as duas janelas sobem da base da tela */
+html[data-layout="stack"] .sv-overlay{ align-items:flex-end; }
+html[data-layout="stack"] .sv-box{ width:100%; max-width:560px; max-height:92vh; max-height:92dvh; border-radius:22px 22px 0 0; border-bottom:none;
+  transform:translateY(48px); transition:transform .22s cubic-bezier(.2,.8,.2,1); }
+html[data-layout="stack"] .sv-overlay.show .sv-box{ transform:none; }
+html[data-layout="stack"] .sv-grab{ display:block; }
+html[data-layout="stack"] .sv-head{ padding-top:10px; border-radius:22px 22px 0 0; }
+html[data-layout="stack"] .fc-hero{ flex-wrap:wrap; padding-top:10px; border-radius:22px 22px 0 0; }
+html[data-layout="stack"] .fc-hero .sv-grab{ flex:none; margin:0 calc(50% - 19px); }
+html[data-layout="stack"] .sv-foot, html[data-layout="stack"] .fc-acoes{ border-radius:0; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion:reduce){ .sv-box, .sv-tile, .sv-chip{ transition:none !important; } }
+/* marca dos dias com local informado */
+table.dowtable td.tem-local{ position:relative; }
+table.dowtable td.tem-local::after{ content:''; position:absolute; top:2px; right:2px; width:4px; height:4px; border-radius:50%; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.35); pointer-events:none; }
+html.imprimindo table.dowtable td.tem-local::after{ display:none !important; }
 </style>
 </head>
 <body>
@@ -1912,6 +2037,71 @@ html.modal-aberto, html.modal-aberto body{ overflow:hidden; overscroll-behavior:
       <button class="modal-btn-danger" id="syncDisconnectBtn" style="display:none">Sair da conta</button>
       <button class="modal-btn-secondary" id="syncCancelBtn">Fechar</button>
       <button class="modal-btn-primary" id="syncSaveBtn">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay sv-overlay" id="servOverlay">
+  <div class="modal-box sv-box" role="dialog" aria-modal="true" aria-labelledby="servTitulo">
+    <div class="sv-head">
+      <div class="sv-grab"></div>
+      <div class="sv-eyebrow"><i class="sv-dot"></i><span id="servEyebrow"></span></div>
+      <h3 class="sv-title" id="servTitulo"></h3>
+      <p class="sv-sub" id="servSub"></p>
+    </div>
+    <div class="sv-body">
+      <div class="sv-sec"><span class="sv-num" id="servNum1">1</span><span id="servLocalRot">Local</span><em id="servLocalSel"></em></div>
+      <div class="sv-grid" id="servGrid"></div>
+      <input type="text" class="modal-input sv-outro" id="servOutro" placeholder="Digite o nome do local" maxlength="60" autocomplete="off" aria-label="Outro local" hidden>
+      <div class="sv-sec"><span class="sv-num" id="servNum2">2</span><span>Horário</span><em id="servHoraSel"></em></div>
+      <div class="sv-chips" id="servChips"></div>
+      <div class="sv-horas">
+        <label class="sv-campo">Início<input type="time" id="servIni"></label>
+        <label class="sv-campo">Término<input type="time" id="servFim"></label>
+      </div>
+      <p class="sv-dur" id="servDur" aria-live="polite"></p>
+    </div>
+    <div class="sv-foot">
+      <button type="button" class="sv-skip" id="servPular">Pintar sem informar</button>
+      <button type="button" class="sv-cancel" id="servCancelar">Cancelar</button>
+      <button type="button" class="sv-ok" id="servSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay sv-overlay" id="fichaOverlay">
+  <div class="modal-box sv-box" role="dialog" aria-modal="true" aria-labelledby="fichaData">
+    <div class="fc-hero">
+      <div class="sv-grab"></div>
+      <div class="fc-tile" id="fichaTile"><span id="fichaMes"></span><b id="fichaDia"></b><span id="fichaSem"></span></div>
+      <div class="fc-hero-txt">
+        <div class="sv-eyebrow"><i class="sv-dot"></i><span id="fichaBadge"></span></div>
+        <h3 class="fc-data" id="fichaData"></h3>
+        <span class="fc-quando" id="fichaQuando"></span>
+      </div>
+      <button type="button" class="fc-x" id="fichaFechar" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="fc-body">
+      <div class="fc-item">
+        <span class="fc-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.6"/></svg></span>
+        <div><span class="fc-rot" id="fichaLocalRot">Local</span><b class="fc-val" id="fichaLocal"></b><span class="fc-det" id="fichaAisp"></span></div>
+      </div>
+      <div class="fc-item">
+        <span class="fc-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg></span>
+        <div><span class="fc-rot">Horário</span><b class="fc-val" id="fichaHora"></b><span class="fc-det" id="fichaDur"></span></div>
+      </div>
+      <div class="fc-duo">
+        <div class="fc-stat"><span class="fc-rot">Valor</span><b class="verde" id="fichaValor"></b></div>
+        <div class="fc-stat"><span class="fc-rot">Escala de serviço</span><b id="fichaEscala"></b></div>
+      </div>
+    </div>
+    <div class="fc-acoes">
+      <button type="button" class="sv-ok" id="fichaEditar">Editar local e horário</button>
+      <a class="fc-sec" id="fichaMapa" target="_blank" rel="noopener">Ver no mapa</a>
+      <div class="fc-linha">
+        <button type="button" class="fc-sec" id="fichaSelecionar">Selecionar dia</button>
+        <button type="button" class="fc-perigo" id="fichaApagar">Apagar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2099,6 +2289,10 @@ class SelSet extends Set{
 }
 let selection = new SelSet(); // "calKey|year|dateStr"
 let data = loadData();
+// Local e horário de cada dia da DELEGADA/DEJEM: mesma chave de `data`
+// ("calendario|ano|data") -> { l: AISP, n: nome do local, m: módulo, i: início, f: término }
+const DETALHES_KEY = "cbpm_calendario_detalhes_v1";
+let detalhes = (function(){ try{ const r = localStorage.getItem(DETALHES_KEY); const o = r ? JSON.parse(r) : null; return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; }catch(e){ return {}; } })();
 let currentYear = new Date().getFullYear();
 
 // Atualiza YEARS incluindo qualquer ano extra já presente em `data` (por
@@ -2144,6 +2338,9 @@ function loadData(){
 }
 function saveData(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  // dia sem cor não guarda local/horário (apagar, excluir ano, importar)
+  Object.keys(detalhes).forEach(k => { if(!data[k]) delete detalhes[k]; });
+  try{ localStorage.setItem(DETALHES_KEY, JSON.stringify(detalhes)); }catch(e){}
   marcarAlterado();
 }
 function cellKey(calKey, year, dateStr){
@@ -2247,7 +2444,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 156;
+const VERSAO_SITE = 157;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2313,6 +2510,7 @@ async function enviarAgora(){
         updatedAt: versao,
         dataJson: JSON.stringify(data),
         ratesJson: JSON.stringify(RATES),
+        detalhesJson: JSON.stringify(detalhes),
         escalaJson: JSON.stringify(lerEscala() || null)
       }),
       new Promise((_, rej) => setTimeout(() => rej({message:'Sem resposta da nuvem (sem internet?). Tentando de novo...'}), 15000))
@@ -2344,6 +2542,10 @@ function adotarDadosRemotos(remoto){
     try{ localStorage.setItem(RATES_STORAGE_KEY, JSON.stringify(RATES)); }catch(e){}
   }
   if(remoto.escala) gravarJSONLocal(ESCALA_KEY, remoto.escala);
+  // (se a nuvem veio de um aparelho ainda na versão antiga, sem esse campo, mantém o que este aparelho tem)
+  if(remoto.detalhes && typeof remoto.detalhes === 'object' && !Array.isArray(remoto.detalhes)) detalhes = remoto.detalhes;
+  Object.keys(detalhes).forEach(k => { if(!data[k]) delete detalhes[k]; });
+  try{ localStorage.setItem(DETALHES_KEY, JSON.stringify(detalhes)); }catch(e){}
   syncUpdatedAt = remoto.updatedAt;
   gravarJSONLocal(SYNC_META_KEY, {updatedAt: syncUpdatedAt});
   refreshYearsFromData();
@@ -2373,6 +2575,7 @@ function receberRemoto(doc, temEscritaLocalPendente){
       updatedAt: doc.updatedAt || 0,
       data: JSON.parse(doc.dataJson || '{}'),
       rates: doc.ratesJson ? JSON.parse(doc.ratesJson) : null,
+      detalhes: doc.detalhesJson ? JSON.parse(doc.detalhesJson) : null,
       escala: doc.escalaJson ? JSON.parse(doc.escalaJson) : null
     };
   }catch(e){
@@ -2398,6 +2601,8 @@ function erroRemoto(err){ syncMostrar('erro', traduzErroSync(err)); }
 function limparCalendarioLocal(){
   data = {};
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  detalhes = {};
+  try{ localStorage.removeItem(DETALHES_KEY); }catch(e){}
   RATES = Object.assign({}, DEFAULT_RATES, { delegada: Object.assign({}, DEFAULT_RATES.delegada), dejem: Object.assign({}, DEFAULT_RATES.dejem) });
   try{ localStorage.removeItem(RATES_STORAGE_KEY); }catch(e){}
   try{ localStorage.removeItem(ESCALA_KEY); }catch(e){}
@@ -2856,6 +3061,8 @@ function render(){
             if(color){
               td.style.background = COLORS[color];
               td.style.color = (color === 'verde') ? '#111' : '#fff';
+              const det = cal.key !== 'servico' ? detalhes[cellKey(cal.key, currentYear, dateStr)] : null;
+              if(det){ td.classList.add('tem-local'); td.title = resumoDetalhe(det); }
             }
             if(selection.has(cellKey(cal.key, currentYear, dateStr))){
               td.classList.add('selected');
@@ -2965,6 +3172,8 @@ function onDayClick(e){
   vibrar(8);
   td.classList.remove('pop'); void td.offsetWidth; td.classList.add('pop');
   const key = cellKey(td.dataset.cal, currentYear, td.dataset.date);
+  // dia já pintado da DELEGADA/DEJEM (sem outros dias selecionados): abre a ficha do serviço
+  if(selection.size === 0 && LOCAIS[td.dataset.cal] && data[key]){ abrirFicha(key); return; }
   if(selection.has(key)){
     selection.delete(key);
     td.classList.remove('selected');
@@ -3104,6 +3313,16 @@ function pedirConfirmacao(cor, sw){
   if(semConta()){ avisoSemConta(); return; }
   const alvo = barraAlvo();
   if(alvo.length === 0){ if(selection.size === 0) barraAviso('Toque em um ou mais dias primeiro'); return; }
+  // DELEGADA/DEJEM: em vez da confirmação no rodapé, pergunta o local e o horário
+  if(cor !== ''){
+    const calDaCor = Object.keys(LOCAIS).find(c => CORES_PERMITIDAS[c].includes(cor));
+    const permitidos = calDaCor ? alvo.filter(k => k.split('|')[0] === calDaCor) : [];
+    if(permitidos.length){
+      barraPendente = null; clearTimeout(barraMsgTimer); barraMsg = ''; atualizarBarra();
+      abrirServico({ modo:'novo', keys: permitidos, cal: calDaCor, cor: cor, fora: alvo.filter(k => k.split('|')[0] !== calDaCor) });
+      return;
+    }
+  }
   barraPendente = cor;
   barraAssin = alvo.slice().sort().join(',');
   if(cor !== ''){
@@ -3148,11 +3367,306 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && barraPenden
     ini = null;
     if(moveu) return;                                    // arrastar/rolar não conta
     if(selection.size === 0) return;
-    if(e.target.closest && e.target.closest('td[data-date], .swatch, .month h3.clicavel, #barraSel')) return;
+    if(e.target.closest && e.target.closest('td[data-date], .swatch, .month h3.clicavel, #barraSel, .sv-overlay')) return;
     selection.clear();
     document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
   }, true);
 })();
+
+// ===========================================================================
+// LOCAL E HORÁRIO DO SERVIÇO (DELEGADA / DEJEM) + FICHA DO SERVIÇO   (v157)
+// ===========================================================================
+// Para acrescentar/retirar um local, basta editar as listas abaixo.
+const LOCAIS = {
+  delegada: [
+    { nome: "25 de Março", aisp: "85760", modulo: "M1" },
+    { nome: "Florêncio de Abreu", aisp: "85759", modulo: "M1" },
+    { nome: "José Paulino", aisp: "85758", modulo: "M1" },
+    { nome: "Triângulo Histórico", aisp: "85757", modulo: "M1" },
+    { nome: "Paulista", aisp: "85756", modulo: "M1" },
+    { nome: "Centro Novo", aisp: "85755", modulo: "M1" },
+    { nome: "Liberdade", aisp: "85754", modulo: "M1" },
+    { nome: "Roosevelt", aisp: "85753", modulo: "M1" },
+    { nome: "Sé", aisp: "85752", modulo: "M1" },
+    { nome: "Marechal Deodoro", aisp: "85751", modulo: "M1" },
+    { nome: "Santa Casa", aisp: "85750", modulo: "M1" },
+    { nome: "Cambuci", aisp: "85749", modulo: "M1" },
+    { nome: "Santa Ifigênia", aisp: "85748", modulo: "M1" },
+    { nome: "Volante Cenas Abertas de Uso", aisp: "85745", modulo: "M1" },
+    { nome: "Oriente", aisp: "85744", modulo: "M1" },
+    { nome: "Concórdia", aisp: "85743", modulo: "M1" },
+    { nome: "Brás", aisp: "85742", modulo: "M1" },
+    { nome: "Feira da Madrugada", aisp: "85741", modulo: "M1" }
+  ],
+  dejem: [   // Metrô, CPA/M-1
+    { nome: "Estação Armênia", aisp: "84760", modulo: "CPA/M-1" },
+    { nome: "Estação Luz", aisp: "84761", modulo: "CPA/M-1" },
+    { nome: "Estação São Bento", aisp: "84762", modulo: "CPA/M-1" },
+    { nome: "Estação Marechal Deodoro", aisp: "84768", modulo: "CPA/M-1" },
+    { nome: "Estação Santa Cecília", aisp: "84769", modulo: "CPA/M-1" },
+    { nome: "Estação República", aisp: "84770", modulo: "CPA/M-1" },
+    { nome: "Estação Anhangabaú", aisp: "84771", modulo: "CPA/M-1" },
+    { nome: "Estação Sé", aisp: "84772", modulo: "CPA/M-1" },
+    { nome: "Estação Pedro II", aisp: "84773", modulo: "CPA/M-1" },
+    { nome: "Estação Brás", aisp: "84774", modulo: "CPA/M-1" },
+    { nome: "Estação Belém", aisp: "84776", modulo: "CPA/M-1" },
+    { nome: "Estação Trianon MASP", aisp: "84787", modulo: "CPA/M-1" },
+    { nome: "Estação Liberdade", aisp: "85430", modulo: "CPA/M-1" },
+    { nome: "Estação Paraíso", aisp: "85431", modulo: "CPA/M-1" }
+  ]
+};
+Object.keys(LOCAIS).forEach(c => LOCAIS[c].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true })));
+// horários prontos por cor (DELEGADA). Na DEJEM os atalhos são os horários que a pessoa mais usa.
+const HORARIOS_COR = { rosa: [['06:00','14:00'],['14:00','22:00']], roxo: [['19:00','03:00']], dourado: [['22:00','06:00']] };
+const HORAS_PADRAO = 8;
+// cor de destaque das janelas: c = cor do dia, t = tom legível no fundo escuro, claro = texto escuro por cima
+const ACENTO = {
+  rosa: { c:'#1D4ED8', t:'#8fb0ff' }, roxo: { c:'#EAB308', t:'#f3cd52', claro:true },
+  dourado: { c:'#FF6B00', t:'#ffa366' }, vermelho: { c:'#E11D2A', t:'#ff8a8a' }
+};
+const SEMANA = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+function minDe(h){ const p = String(h || '').split(':'); return (p.length === 2 && p[0] !== '' && p[1] !== '') ? Number(p[0]) * 60 + Number(p[1]) : NaN; }
+function horaDeMin(m){ m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2,'0') + ':' + String(m % 60).padStart(2,'0'); }
+function duracaoTxt(i, f){
+  const a = minDe(i), b = minDe(f);
+  if(isNaN(a) || isNaN(b) || a === b) return '';
+  const d = ((b - a) + 1440) % 1440, h = Math.floor(d / 60), m = d % 60;
+  return h + 'h' + (m ? String(m).padStart(2,'0') : '') + ' de serviço' + (b < a ? ' · termina no dia seguinte' : '');
+}
+function faixaTxt(i, f){ return i + ' – ' + f; }
+function localDoDetalhe(cal, det){
+  if(!det) return null;
+  const achado = det.l ? (LOCAIS[cal] || []).find(x => x.aisp === det.l) : null;
+  if(achado) return achado;
+  return det.n ? { nome: det.n, aisp: det.l || '', modulo: det.m || '' } : null;
+}
+function resumoDetalhe(det){
+  const partes = [];
+  if(det.n) partes.push(det.n);
+  if(det.i && det.f) partes.push(faixaTxt(det.i, det.f));
+  return partes.join(' · ');
+}
+function nomeCurto(cal, nome){ return cal === 'dejem' ? nome.replace(/^Estação\s+/i, '') : nome; }
+function aplicarAcento(caixa, cor){
+  const a = ACENTO[cor] || { c:'#00B0F0', t:'#6fd3ff' };
+  caixa.style.setProperty('--acc', a.c); caixa.style.setProperty('--acc-t', a.t);
+  caixa.querySelectorAll('.sv-ok, .fc-tile').forEach(el => el.classList.toggle('claro', !!a.claro));
+}
+function datasPorExtenso(keys){
+  if(keys.length === 1){
+    const d = dataDeStr(keys[0].split('|')[2]);
+    return SEMANA[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES_CAP[d.getMonth()].toLowerCase() + ' de ' + d.getFullYear();
+  }
+  const g = {};
+  keys.map(k => k.split('|')[2]).sort().forEach(s => { (g[s.slice(0,7)] = g[s.slice(0,7)] || []).push(Number(s.slice(8))); });
+  return keys.length + ' dias · ' + Object.keys(g).map(ym => MESES_CAP[Number(ym.slice(5)) - 1].slice(0,3) + ' ' + g[ym].join(', ')).join(' | ');
+}
+
+// ---------- Janela "Local e horário" ----------
+const servOverlay = document.getElementById('servOverlay');
+const servGrid = document.getElementById('servGrid');
+const servOutro = document.getElementById('servOutro');
+const servChips = document.getElementById('servChips');
+const servIni = document.getElementById('servIni');
+const servFim = document.getElementById('servFim');
+const servSalvarBtn = document.getElementById('servSalvar');
+let sv = null;   // { modo:'novo'|'editar', keys, cal, cor, fora, local, outro, fimManual }
+
+function atalhosDeHorario(cal, cor){
+  if(HORARIOS_COR[cor]) return HORARIOS_COR[cor];
+  // os 3 horários que a pessoa mais usou nesse calendário
+  const cont = {};
+  Object.keys(detalhes).forEach(k => { const d = detalhes[k]; if(k.indexOf(cal + '|') === 0 && d && d.i && d.f) cont[d.i + '|' + d.f] = (cont[d.i + '|' + d.f] || 0) + 1; });
+  return Object.keys(cont).sort((a, b) => cont[b] - cont[a]).slice(0, 3).sort().map(x => x.split('|'));
+}
+function abrirServico(op){
+  sv = Object.assign({ fora: [], local: null, outro: false, fimManual: false }, op);
+  const caixa = servOverlay.querySelector('.sv-box');
+  aplicarAcento(caixa, sv.cor);
+  const cal = sv.cal, dejem = cal === 'dejem';
+  const valor = RATES[cal] && RATES[cal][sv.cor];
+  document.getElementById('servEyebrow').textContent = (dejem ? 'DEJEM · Metrô' : 'DELEGADA') + (valor !== undefined ? ' · R$ ' + fmtBRL(valor) : '');
+  document.getElementById('servTitulo').textContent = sv.modo === 'editar' ? 'Editar local e horário' : (dejem ? 'Em qual estação e horário?' : 'Em qual área e horário?');
+  document.getElementById('servSub').textContent = datasPorExtenso(sv.keys).replace(/^./, c => c.toUpperCase());
+  document.getElementById('servLocalRot').textContent = dejem ? 'Estação do Metrô' : 'Área de atuação';
+  // se todos os dias já têm o mesmo local/horário, a janela abre com ele
+  const dets = sv.keys.map(k => detalhes[k]);
+  const igual = dets[0] && dets.every(d => d && d.l === dets[0].l && d.n === dets[0].n && d.i === dets[0].i && d.f === dets[0].f) ? dets[0] : null;
+  servOutro.value = ''; servIni.value = ''; servFim.value = '';
+  if(igual){
+    const achado = igual.l ? LOCAIS[cal].find(x => x.aisp === igual.l) : null;
+    if(achado) sv.local = achado; else if(igual.n){ sv.outro = true; servOutro.value = igual.n; }
+    servIni.value = igual.i || ''; servFim.value = igual.f || ''; sv.fimManual = !!igual.f;
+  } else if(HORARIOS_COR[sv.cor] && HORARIOS_COR[sv.cor].length === 1){
+    servIni.value = HORARIOS_COR[sv.cor][0][0]; servFim.value = HORARIOS_COR[sv.cor][0][1];
+  }
+  // grade de locais
+  servGrid.innerHTML = '';
+  LOCAIS[cal].forEach(loc => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sv-tile'; b.dataset.aisp = loc.aisp;
+    const n = document.createElement('b'); n.textContent = nomeCurto(cal, loc.nome);
+    const a = document.createElement('small'); a.textContent = 'AISP ' + loc.aisp;
+    b.appendChild(n); b.appendChild(a);
+    b.addEventListener('click', () => { vibrar(8); sv.local = loc; sv.outro = false; servRefrescar(); });
+    servGrid.appendChild(b);
+  });
+  const o = document.createElement('button');
+  o.type = 'button'; o.className = 'sv-tile outro'; o.dataset.aisp = '';
+  o.innerHTML = '<b>Outro local</b><small>Digitar o nome</small>';
+  o.addEventListener('click', () => { vibrar(8); sv.local = null; sv.outro = true; servRefrescar(); setTimeout(() => { try{ servOutro.focus(); }catch(e){} }, 60); });
+  servGrid.appendChild(o);
+  // atalhos de horário
+  servChips.innerHTML = '';
+  atalhosDeHorario(cal, sv.cor).forEach(par => {
+    const c = document.createElement('button');
+    c.type = 'button'; c.className = 'sv-chip'; c.dataset.i = par[0]; c.dataset.f = par[1];
+    c.textContent = faixaTxt(par[0], par[1]);
+    c.addEventListener('click', () => { vibrar(8); servIni.value = par[0]; servFim.value = par[1]; sv.fimManual = true; servRefrescar(); });
+    servChips.appendChild(c);
+  });
+  document.getElementById('servPular').hidden = sv.modo !== 'novo';
+  servRefrescar();
+  caixa.scrollTop = 0;
+  servOverlay.classList.add('show');
+}
+function servLocalAtual(){
+  if(!sv) return null;
+  if(sv.outro){ const t = servOutro.value.replace(/\s+/g,' ').trim(); return t ? { nome: t, aisp: '', modulo: '' } : null; }
+  return sv.local;
+}
+function servRefrescar(){
+  if(!sv) return;
+  const loc = servLocalAtual();
+  servGrid.querySelectorAll('.sv-tile').forEach(b => b.classList.toggle('on', sv.outro ? b.dataset.aisp === '' : !!(sv.local && b.dataset.aisp === sv.local.aisp)));
+  servOutro.hidden = !sv.outro;
+  document.getElementById('servLocalSel').textContent = loc ? nomeCurto(sv.cal, loc.nome) : '';
+  document.getElementById('servNum1').classList.toggle('ok', !!loc);
+  const i = servIni.value, f = servFim.value, dur = duracaoTxt(i, f), horaOk = !!dur;
+  servChips.querySelectorAll('.sv-chip').forEach(c => c.classList.toggle('on', c.dataset.i === i && c.dataset.f === f));
+  document.getElementById('servHoraSel').textContent = horaOk ? faixaTxt(i, f) : '';
+  document.getElementById('servNum2').classList.toggle('ok', horaOk);
+  document.getElementById('servDur').textContent = horaOk ? dur.replace(/^./, c => c.toUpperCase())
+    : (i && f ? 'O início e o término não podem ser iguais.' : 'Informe o início: o término é sugerido com ' + HORAS_PADRAO + ' horas e pode ser alterado.');
+  const n = sv.keys.length;
+  servSalvarBtn.textContent = sv.modo === 'editar' ? 'Salvar' : (n === 1 ? 'Pintar dia' : 'Pintar ' + n + ' dias');
+  servSalvarBtn.disabled = !(loc && horaOk);
+}
+function fecharServico(){ servOverlay.classList.remove('show'); sv = null; }
+function concluirServico(comInfo){
+  if(!sv) return;
+  const s = sv, loc = servLocalAtual(), i = servIni.value, f = servFim.value;
+  if(comInfo && !(loc && duracaoTxt(i, f))) return;
+  s.keys.forEach(k => {
+    const p = k.split('|');
+    if(s.modo === 'novo') setColorFor(p[0], p[1], p[2], s.cor);
+    if(comInfo) detalhes[k] = { l: loc.aisp, n: loc.nome, m: loc.modulo, i: i, f: f };
+  });
+  fecharServico();
+  vibrar(15);
+  if(s.modo === 'novo'){
+    selection.clear();
+    document.querySelectorAll('td.selected').forEach(td => td.classList.remove('selected'));
+  }
+  saveData();
+  render();
+  if(s.modo === 'editar'){ abrirFicha(s.keys[0]); return; }
+  const n = s.keys.length;
+  barraAviso(n + (n === 1 ? ' dia pintado' : ' dias pintados') + (comInfo ? ' · ' + nomeCurto(s.cal, loc.nome) + ' ' + faixaTxt(i, f) : ''), 2600);
+  if(s.fora.length){
+    const frases = Array.from(new Set(s.fora.map(k => k.split('|')[0]))).map(c => {
+      const info = ATIVIDADE_INFO[c];
+      return 'a atividade ' + info.nome + ' só aceita ' + (info.plural ? 'as cores' : 'a cor') + ' ' + info.cores;
+    });
+    showAlert('Conforme a legenda, ' + frases.join('; ') + '.\n\n' + s.fora.length + ' dia(s) não foram alterados.', 'Cor não permitida');
+  }
+}
+servOutro.addEventListener('input', servRefrescar);
+servIni.addEventListener('input', () => {
+  // término sugerido: início + 8h (até a pessoa mexer no término)
+  if(sv && !sv.fimManual && !isNaN(minDe(servIni.value))) servFim.value = horaDeMin(minDe(servIni.value) + HORAS_PADRAO * 60);
+  servRefrescar();
+});
+servFim.addEventListener('input', () => { if(sv) sv.fimManual = servFim.value !== ''; servRefrescar(); });
+servSalvarBtn.addEventListener('click', () => concluirServico(true));
+document.getElementById('servPular').addEventListener('click', () => concluirServico(false));
+document.getElementById('servCancelar').addEventListener('click', () => { const ed = sv && sv.modo === 'editar' ? sv.keys[0] : null; fecharServico(); if(ed) abrirFicha(ed); });
+servOverlay.addEventListener('click', e => { if(e.target === servOverlay) fecharServico(); });
+
+// ---------- Ficha do serviço (toque num dia já pintado) ----------
+const fichaOverlay = document.getElementById('fichaOverlay');
+const fichaApagarBtn = document.getElementById('fichaApagar');
+let fichaKey = null, fichaApagarTimer = null;
+function fichaDesarmarApagar(){ clearTimeout(fichaApagarTimer); fichaApagarBtn.classList.remove('certeza'); fichaApagarBtn.textContent = 'Apagar'; }
+function abrirFicha(key){
+  const cor = data[key];
+  if(!cor) return;
+  fichaKey = key;
+  const p = key.split('|'), cal = p[0], d = dataDeStr(p[2]), det = detalhes[key] || null, dejem = cal === 'dejem';
+  aplicarAcento(fichaOverlay.querySelector('.sv-box'), cor);
+  document.getElementById('fichaMes').textContent = MESES[d.getMonth()].slice(0,3);
+  document.getElementById('fichaDia').textContent = d.getDate();
+  document.getElementById('fichaSem').textContent = SEMANA[d.getDay()].slice(0,3).toUpperCase();
+  document.getElementById('fichaBadge').textContent = dejem ? 'DEJEM · Metrô' : 'DELEGADA';
+  document.getElementById('fichaData').textContent = (SEMANA[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES_CAP[d.getMonth()].toLowerCase() + ' de ' + d.getFullYear()).replace(/^./, c => c.toUpperCase());
+  const falta = diasEntreDatas(dataDeStr(hojeStr()), d), q = document.getElementById('fichaQuando');
+  q.textContent = falta === 0 ? 'Hoje' : falta === 1 ? 'Amanhã' : falta === -1 ? 'Ontem' : falta > 0 ? 'Em ' + falta + ' dias' : 'Há ' + (-falta) + ' dias';
+  q.classList.toggle('hoje', falta === 0);
+  const loc = localDoDetalhe(cal, det), elLoc = document.getElementById('fichaLocal'), elHora = document.getElementById('fichaHora');
+  document.getElementById('fichaLocalRot').textContent = dejem ? 'Estação' : 'Área de atuação';
+  elLoc.textContent = loc ? loc.nome : 'Local não informado';
+  elLoc.classList.toggle('vazio', !loc);
+  document.getElementById('fichaAisp').textContent = loc ? [loc.aisp ? 'AISP ' + loc.aisp : '', loc.modulo ? (dejem ? loc.modulo : 'Módulo ' + loc.modulo) : ''].filter(Boolean).join(' · ') : '';
+  const temHora = !!(det && det.i && det.f);
+  elHora.textContent = temHora ? faixaTxt(det.i, det.f) : 'Horário não informado';
+  elHora.classList.toggle('vazio', !temHora);
+  document.getElementById('fichaDur').textContent = temHora ? duracaoTxt(det.i, det.f).replace(/^./, c => c.toUpperCase()) : '';
+  const valor = RATES[cal] && RATES[cal][cor];
+  document.getElementById('fichaValor').textContent = valor !== undefined ? 'R$ ' + fmtBRL(valor) : '—';
+  const serv = getColorFor('servico', p[1], p[2]);
+  document.getElementById('fichaEscala').textContent = serv === 'azul' ? 'Trabalho' : serv === 'verde' ? 'Folga mensal' : anoTemServico(p[1]) ? 'Folga' : '—';
+  document.getElementById('fichaEditar').textContent = (loc || temHora) ? 'Editar local e horário' : 'Informar local e horário';
+  const mapa = document.getElementById('fichaMapa');
+  mapa.hidden = !(dejem && loc && loc.aisp);
+  if(!mapa.hidden) mapa.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc.nome + ' Metrô São Paulo');
+  fichaDesarmarApagar();
+  fichaOverlay.querySelector('.sv-box').scrollTop = 0;
+  fichaOverlay.classList.add('show');
+}
+function fecharFicha(){ fichaOverlay.classList.remove('show'); fichaDesarmarApagar(); fichaKey = null; }
+document.getElementById('fichaFechar').addEventListener('click', fecharFicha);
+fichaOverlay.addEventListener('click', e => { if(e.target === fichaOverlay) fecharFicha(); });
+document.getElementById('fichaEditar').addEventListener('click', () => {
+  if(!fichaKey) return;
+  if(semConta()){ fecharFicha(); avisoSemConta(); return; }
+  const k = fichaKey; fecharFicha();
+  abrirServico({ modo:'editar', keys:[k], cal: k.split('|')[0], cor: data[k] });
+});
+document.getElementById('fichaSelecionar').addEventListener('click', () => {
+  if(!fichaKey) return;
+  const k = fichaKey, p = k.split('|'); fecharFicha();
+  selection.add(k);
+  const td = document.querySelector('td[data-cal="' + p[0] + '"][data-date="' + p[2] + '"]');
+  if(td) td.classList.add('selected');
+});
+fichaApagarBtn.addEventListener('click', () => {
+  if(!fichaKey) return;
+  if(semConta()){ fecharFicha(); avisoSemConta(); return; }
+  if(!fichaApagarBtn.classList.contains('certeza')){
+    fichaApagarBtn.classList.add('certeza'); fichaApagarBtn.textContent = 'Confirmar';
+    fichaApagarTimer = setTimeout(fichaDesarmarApagar, 3500);
+    return;
+  }
+  const p = fichaKey.split('|');
+  fecharFicha(); vibrar(15);
+  setColorFor(p[0], p[1], p[2], null);
+  saveData(); render();
+  barraAviso('Serviço apagado');
+});
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(servOverlay.classList.contains('show')) fecharServico(); else if(fichaOverlay.classList.contains('show')) fecharFicha();
+});
 
 
 // ===== ESCALA DE SERVIÇO: preenche o calendário de SERVIÇO a partir do regime =====
@@ -3616,7 +4130,7 @@ document.getElementById('printBtn').addEventListener('click', async () => {
   }
 });
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(Object.assign({}, data, { __detalhes: detalhes }), null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'calendario_dados.json';
@@ -3633,7 +4147,10 @@ document.getElementById('importFile').addEventListener('change', (e) => {
   reader.onload = () => {
     try{
       const imported = JSON.parse(reader.result);
+      const det = imported && imported.__detalhes;
+      if(imported) delete imported.__detalhes;
       data = migrateData(imported);
+      if(det && typeof det === 'object' && !Array.isArray(det)) detalhes = det;
       refreshYearsFromData();
       if(!YEARS.includes(currentYear)) currentYear = YEARS[YEARS.length - 1];
       popularYearSelect();
