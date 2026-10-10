@@ -1,9 +1,19 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 162
+  VERSÃO ATUAL: 163
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v163: quadro PRÓXIMOS SERVIÇOS. (1) BUG corrigido: ao abrir o app o quadro
+    não aparecia (só depois de trocar de aba), porque ele era desenhado
+    antes de o login terminar de carregar; agora é redesenhado assim que a
+    conta entra. (2) Dá para ENCOLHER o quadro tocando no título (fica só
+    a linha com a quantidade e o valor); o app lembra se ficou aberto ou
+    encolhido. (3) No celular, cada aba mostra só os seus: DELEGADA só os
+    de Delegada, DEJEM só os de Dejem; a aba SERVIÇO e o computador
+    mostram os dois juntos. (4) Ao abrir o app (e ao trocar de aba) a tela
+    para no mês atual sem descer até a tabela de valores: o fim da tela
+    fica no fim dos calendários, como já era na aba SERVIÇO.
   v162: EXPORTAR completo. O arquivo de backup agora leva tudo: os dias
     pintados, o local e horário de cada serviço, os valores em R$ (EDITAR
     VALORES) e o regime salvo em ESCALA. O IMPORTAR restaura tudo isso e
@@ -2170,6 +2180,21 @@ body::before{ position:absolute; inset:0 0 auto 0; height:900px; }
   html.menu-aberto #menuBtn .m3{ transform:translateY(-5px) rotate(-45deg); }
 }
 @media (prefers-reduced-motion:reduce){ html.menu-aberto[data-layout="stack"] .topbar button, #menuBtn .ic path{ animation:none !important; transition:none !important; } }
+
+/* ===== v163: quadro de próximos serviços encolhível ===== */
+.px-tit{ display:inline-flex; align-items:center; gap:calc(9px * var(--s)); background:transparent; border:none; padding:6px 4px 6px 0; margin:-6px 0; color:inherit; font-family:inherit; cursor:pointer; min-height:32px; -webkit-tap-highlight-color:transparent; }
+.px-tit h2{ pointer-events:none; }
+.px-seta{ color:#8793a3; flex:none; transition:transform .2s ease; }
+#proximos.fechado .px-seta{ transform:rotate(-90deg); }
+#proximos.fechado .px-cab{ margin-bottom:0; }
+#proximos.fechado .px-res{ margin-left:auto; }
+html[data-layout="stack"] #proximos.fechado .px-res{ flex-basis:auto; order:0; }
+html[data-layout="stack"] #proximos.fechado{ padding:10px 12px; }
+html[data-layout="stack"] #proximos.fechado .px-cab{ flex-wrap:nowrap; gap:8px; }
+html[data-layout="stack"] #proximos.fechado .px-cab h2{ letter-spacing:.1em; font-size:11px; white-space:nowrap; }
+html[data-layout="stack"] #proximos.fechado .px-res{ font-size:12px; white-space:nowrap; }
+.px-tit:focus-visible{ outline:2px solid #fff; outline-offset:2px; border-radius:6px; }
+@media (prefers-reduced-motion:reduce){ .px-seta{ transition:none; } }
 </style>
 </head>
 <body>
@@ -2658,8 +2683,21 @@ function rolarParaMesAtual(){
   const topo = el.getBoundingClientRect().top + window.scrollY;
   const pal = document.querySelector('.palette');
   const offset = (pal && getComputedStyle(pal).position === 'sticky') ? pal.offsetHeight + 12 : 12;
-  window.scrollTo({top: Math.max(0, topo - offset), behavior:'auto'});
+  let alvo = topo - offset;
+  // celular: o fim da tela para no fim dos calendários (não mostra a tabela de valores, que fica abaixo)
+  if(document.documentElement.dataset.layout === 'stack'){
+    const meses = el.parentElement;
+    const fimMeses = meses.getBoundingClientRect().bottom + window.scrollY;
+    alvo = Math.min(alvo, fimMeses + 14 - window.innerHeight);
+  }
+  window.scrollTo({top: Math.max(0, alvo), behavior:'auto'});
 }
+// Ao abrir o app, o conteúdo ainda muda de altura (login, dados da nuvem, quadro de próximos
+// serviços): reposiciona no mês atual até a pessoa tocar/rolar a tela pela primeira vez.
+let rolagemInicialAtiva = true;
+function rolagemInicial(){ if(rolagemInicialAtiva) requestAnimationFrame(() => { if(rolagemInicialAtiva) rolarParaMesAtual(); }); }
+['touchstart','wheel','pointerdown','keydown'].forEach(ev => window.addEventListener(ev, () => { rolagemInicialAtiva = false; }, { passive:true, capture:true }));
+setTimeout(() => { rolagemInicialAtiva = false; }, 8000);
 function fmtBRL(v){
   return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
@@ -2741,7 +2779,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 162;
+const VERSAO_SITE = 163;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -2851,6 +2889,7 @@ function adotarDadosRemotos(remoto){
   popularYearSelect();
   atualizarLegendaValores();
   render();
+  rolagemInicial();
 }
 
 // Chamada a cada mudança do documento na nuvem (inclusive a primeira leitura).
@@ -2919,6 +2958,8 @@ function aoMudarUsuario(user){
   syncUser = user || null;
   if(syncUser){
     syncMostrar('sync');
+    // o quadro PRÓXIMOS SERVIÇOS e a dica dependem de estar logado: redesenha agora
+    try{ render(); rolagemInicial(); }catch(e){}
     syncBackend.subscribe(receberRemoto, erroRemoto);
   } else {
     if(syncBackend) syncBackend.unsubscribe();
@@ -3905,6 +3946,9 @@ servOverlay.addEventListener('click', e => { if(e.target === servOverlay) fechar
 
 // ---------- Quadro PRÓXIMOS SERVIÇOS (v159) ----------
 let proxAberto = false;
+const PROX_FECHADO_KEY = 'cbpm_prox_fechado_v1';
+let proxFechado = false;
+try{ proxFechado = localStorage.getItem(PROX_FECHADO_KEY) === '1'; }catch(e){}
 function listarProximos(){
   const hoje = hojeStr(), out = [];
   Object.keys(data).forEach(k => {
@@ -3920,11 +3964,24 @@ function renderProximos(){
   const el = document.getElementById('proximos');
   if(!el) return;
   if(semConta()){ el.hidden = true; el.innerHTML = ''; return; }
-  const todos = listarProximos(), stack = document.documentElement.dataset.layout === 'stack';
+  const stack = document.documentElement.dataset.layout === 'stack';
+  // celular: a aba DELEGADA mostra só Delegada e a aba DEJEM só Dejem (SERVIÇO e computador: os dois)
+  const filtro = (stack && LOCAIS[activeTab]) ? activeTab : null;
+  const todos = listarProximos().filter(x => !filtro || x.cal === filtro);
   const limite = stack ? 3 : 5, lista = proxAberto ? todos : todos.slice(0, limite);
   el.hidden = false; el.innerHTML = '';
+  el.classList.toggle('fechado', proxFechado);
   const cab = document.createElement('div'); cab.className = 'px-cab';
-  const tit = document.createElement('h2'); tit.textContent = 'Próximos serviços'; cab.appendChild(tit);
+  const tit = document.createElement('button'); tit.type = 'button'; tit.className = 'px-tit';
+  tit.setAttribute('aria-expanded', proxFechado ? 'false' : 'true');
+  tit.innerHTML = '<svg class="px-seta" width="12" height="8" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><h2></h2>';
+  tit.querySelector('h2').textContent = filtro === 'delegada' ? 'Próximas Delegadas' : filtro === 'dejem' ? 'Próximas Dejem' : 'Próximos serviços';
+  tit.addEventListener('click', () => {
+    proxFechado = !proxFechado; vibrar(8);
+    try{ localStorage.setItem(PROX_FECHADO_KEY, proxFechado ? '1' : '0'); }catch(e){}
+    renderProximos();
+  });
+  cab.appendChild(tit);
   if(todos.length){
     let soma = 0; todos.forEach(x => { const v = RATES[x.cal] && RATES[x.cal][x.cor]; if(v) soma += v; });
     const res = document.createElement('span'); res.className = 'px-res';
@@ -3933,16 +3990,18 @@ function renderProximos(){
     res.querySelector('i').textContent = 'R$ ' + fmtBRL(soma);
     cab.appendChild(res);
   }
-  if(todos.length > limite){
+  if(!proxFechado && todos.length > limite){
     const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'px-mais';
     bt.textContent = proxAberto ? 'Mostrar menos' : 'Ver todos';
     bt.addEventListener('click', () => { proxAberto = !proxAberto; renderProximos(); });
     cab.appendChild(bt);
   }
   el.appendChild(cab);
+  if(proxFechado) return;
   if(!todos.length){
     const v = document.createElement('p'); v.className = 'px-vazio';
-    v.textContent = 'Nenhum serviço marcado de hoje em diante. Pinte um dia na DELEGADA ou na DEJEM e ele aparece aqui.';
+    v.textContent = filtro ? 'Nenhum dia de ' + (filtro === 'dejem' ? 'DEJEM' : 'DELEGADA') + ' marcado de hoje em diante. Pinte um dia neste calendário e ele aparece aqui.'
+      : 'Nenhum serviço marcado de hoje em diante. Pinte um dia na DELEGADA ou na DEJEM e ele aparece aqui.';
     el.appendChild(v); return;
   }
   const grade = document.createElement('div'); grade.className = 'px-grade';
@@ -3957,7 +4016,7 @@ function renderProximos(){
     b.querySelector('.px-dia b').textContent = d.getDate();
     const sem = SEMANA[d.getDay()].slice(0,3);
     b.querySelector('.px-q').textContent = (falta === 0 ? 'Hoje' : falta === 1 ? 'Amanhã' : sem.charAt(0).toUpperCase() + sem.slice(1) + (d.getFullYear() !== hoje.getFullYear() ? ' · ' + d.getFullYear() : ''))
-      + ' · ' + (x.cal === 'dejem' ? 'DEJEM' : 'DELEGADA');
+      + (filtro ? (falta > 1 ? ' · em ' + falta + ' dias' : '') : ' · ' + (x.cal === 'dejem' ? 'DEJEM' : 'DELEGADA'));
     const l = b.querySelector('.px-l'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
     b.querySelector('.px-h').textContent = temHora ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
     b.addEventListener('click', () => { vibrar(8); abrirFicha(x.k); });
