@@ -1,9 +1,15 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 176
+  VERSÃO ATUAL: 177
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v177: três acabamentos de animação. (1) ABA QUE DESLIZA (celular): o fundo
+    colorido escorrega de SERVIÇO para DELEGADA e DEJEM, mudando de cor.
+    (2) NÚMEROS QUE CONTAM: ao abrir o app e ao trocar de aba, os valores
+    do resumo do mês sobem de zero até o total e a barra de progresso
+    enche (celular e computador). (3) ABERTURA: os seis quadradinhos da
+    marca acendem um a um nas cores dos serviços.
   v176: BARRA DAS CORES refeita (celular e computador). (1) Saiu o item
     "Feriado" da barra: ela mostra só as cores que servem para pintar (os
     feriados continuam marcados em lilás dentro dos calendários). (2) Cada
@@ -2516,6 +2522,24 @@ html[data-layout="stack"] .swatch:not(.apagar):active, html[data-layout="stack"]
 html[data-layout="stack"] .swatch.apagar{ flex:0 0 62px; gap:5px; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase; background:rgba(255,255,255,.045); }
 html[data-layout="stack"] .swatch.apagar .sw-ic{ width:19px; height:19px; }
 @media (hover:none), (pointer:coarse){ .swatch:not(.apagar) .box{ box-shadow:0 0 0 2px rgba(255,255,255,.16) !important; } .swatch:not(.apagar){ box-shadow:none; } }
+
+/* ===== v177: aba que desliza, abertura animada ===== */
+/* aba: um fundo só que escorrega de uma para a outra */
+html[data-layout="stack"] .tabs{ position:relative; }
+html[data-layout="stack"] .tabs::before{ content:""; position:absolute; top:5px; bottom:5px; left:5px; width:calc((100% - 18px) / 3); border-radius:11px;
+  background-color:#0aa5e6; background-image:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0));
+  transition:transform .32s cubic-bezier(.3,.9,.3,1), background-color .32s ease; will-change:transform; }
+html[data-tab="delegada"][data-layout="stack"] .tabs::before{ transform:translateX(calc(100% + 4px)); background-color:#2a5cf0; }
+html[data-tab="dejem"][data-layout="stack"] .tabs::before{ transform:translateX(calc(200% + 8px)); background-color:#ee2233; }
+html[data-layout="stack"] .tabs button{ position:relative; z-index:1; }
+html[data-layout="stack"] .tabs button.active, html[data-layout="stack"] .tabs button.active[data-tab]{ background:transparent; box-shadow:none; animation:none; }
+html[data-layout="stack"] .tabs button{ transition:color .25s ease; }
+@media (prefers-reduced-motion:reduce){ html[data-layout="stack"] .tabs::before{ transition:none; } }
+/* abertura: os seis quadradinhos acendem um a um */
+.ab-q{ opacity:0; transform-box:fill-box; transform-origin:center; animation:abAcende .45s cubic-bezier(.2,.9,.2,1.3) both; }
+.ab-q.q1{ animation-delay:.25s; } .ab-q.q2{ animation-delay:.37s; } .ab-q.q3{ animation-delay:.49s; }
+.ab-q.q4{ animation-delay:.61s; } .ab-q.q5{ animation-delay:.73s; } .ab-q.q6{ animation-delay:.85s; }
+@keyframes abAcende{ from{ opacity:0; transform:scale(.3); } to{ opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -2524,8 +2548,9 @@ html[data-layout="stack"] .swatch.apagar .sw-ic{ width:19px; height:19px; }
     <svg viewBox="0 0 64 64" width="76" height="76" aria-hidden="true">
       <rect x="4" y="4" width="56" height="56" rx="15" fill="#141a23" stroke="#2c3745" stroke-width="1.5"/>
       <rect x="4" y="4" width="56" height="17" rx="15" class="ab-topo"/><rect x="4" y="13" width="56" height="8" class="ab-topo"/>
-      <g fill="#33404f"><rect x="13" y="27" width="10" height="10" rx="3"/><rect x="27" y="27" width="10" height="10" rx="3"/><rect x="41" y="41" width="10" height="10" rx="3"/><rect x="13" y="41" width="10" height="10" rx="3"/></g>
-      <rect class="ab-d1" x="41" y="27" width="10" height="10" rx="3" fill="#00B0F0"/><rect class="ab-d2" x="27" y="41" width="10" height="10" rx="3" fill="#FF2A3A"/>
+      <g fill="#33404f"><rect x="13" y="27" width="10" height="10" rx="3"/><rect x="27" y="27" width="10" height="10" rx="3"/><rect x="41" y="27" width="10" height="10" rx="3"/><rect x="13" y="41" width="10" height="10" rx="3"/><rect x="27" y="41" width="10" height="10" rx="3"/><rect x="41" y="41" width="10" height="10" rx="3"/></g>
+      <rect class="ab-q q1" x="13" y="27" width="10" height="10" rx="3" fill="#00B0F0"/><rect class="ab-q q2" x="27" y="27" width="10" height="10" rx="3" fill="#2F63FF"/><rect class="ab-q q3" x="41" y="27" width="10" height="10" rx="3" fill="#EAB308"/>
+      <rect class="ab-q q4" x="13" y="41" width="10" height="10" rx="3" fill="#FF6B00"/><rect class="ab-q q5" x="27" y="41" width="10" height="10" rx="3" fill="#FF2A3A"/><rect class="ab-q q6" x="41" y="41" width="10" height="10" rx="3" fill="#61F000"/>
     </svg>
   </div>
   <div class="ab-nome">Calendário</div>
@@ -3149,7 +3174,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 176;
+const VERSAO_SITE = 177;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3650,6 +3675,7 @@ function setTab(tab){
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
   document.documentElement.dataset.tab = tab;
+  contarResumoAte = Date.now() + 250;
   // animação de troca de aba (só nesse momento, não a cada pintura)
   { const r = document.documentElement; r.classList.remove('troca-aba'); void r.offsetWidth; r.classList.add('troca-aba');
     clearTimeout(setTab._t); setTab._t = setTimeout(() => r.classList.remove('troca-aba'), 420); }
@@ -3923,6 +3949,20 @@ function render(){
   recemPintados = new Set();
 }
 
+// Contagem dos números do resumo (ao abrir o app e ao trocar de aba)
+let contarResumoAte = 0;
+function contarNumero(node, alvo, fmt){
+  try{
+    if(!alvo || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+    const final = node.textContent, t0 = performance.now(), dur = 750;
+    const passo = () => {
+      if(!node.isConnected) return;
+      const p = Math.max(0, Math.min(1, (performance.now() - t0) / dur)), e = 1 - Math.pow(1 - p, 3);
+      if(p < 1){ node.textContent = fmt(alvo * e); requestAnimationFrame(passo); } else node.textContent = final;
+    };
+    node.textContent = fmt(0); requestAnimationFrame(passo);
+  }catch(e){}
+}
 // Cartão-resumo do mês (só aparece no celular): v165
 function buildResumo(cal){
   const el = document.createElement('div'); el.className = 'cal-resumo'; el.dataset.cal = cal.key;
@@ -3958,6 +3998,16 @@ function buildResumo(cal){
     qs[i].querySelector('em').textContent = dinheiro ? un(par[0], nomeS, nomeP) : (i === 0 ? 'já cumpridos' : 'pela frente');
   });
   el.querySelector('.cr-barra i').style.width = pct + '%';
+  if(Date.now() < contarResumoAte){
+    const alvoBarra = pct + '%', bi = el.querySelector('.cr-barra i');
+    bi.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { bi.style.transition = 'width .8s cubic-bezier(.2,.8,.2,1)'; bi.style.width = alvoBarra; }));
+    contarNumero(tot.querySelector('b'), n, v => String(Math.round(v)));
+    if(dinheiro){
+      contarNumero(tot.querySelector('em'), vFeito + vFalta, v => 'R$ ' + fmtBRL(v));
+      contarNumero(qs[0].querySelector('b'), vFeito, v => 'R$ ' + fmtBRL(v));
+      contarNumero(qs[1].querySelector('b'), vFalta, v => 'R$ ' + fmtBRL(v));
+    }
+  }
   el.querySelector('.cr-prog span').textContent = n ? pct + '% feito' : (dinheiro ? (cal.key === 'dejem' ? 'Nenhuma Dejem marcada' : 'Nenhuma Delegada marcada') : 'Nenhum dia marcado');
   // terceira linha (sempre existe, para os três cartões terem a mesma altura no computador)
   { const f = document.createElement('div'); f.className = 'cr-folga'; f.innerHTML = '<i></i><span></span>';
@@ -5414,7 +5464,7 @@ function fecharAbertura(){
   const espera = Math.max(0, 650 - (performance.now() - aberturaInicio));   // mínimo para não "piscar"
   setTimeout(() => {
     const ab = document.getElementById('abertura'), r = document.documentElement;
-    try{ rolarParaMesAtual(); }catch(e){}
+    try{ contarResumoAte = Date.now() + 250; render(); rolarParaMesAtual(); }catch(e){}
     r.classList.add('entrando');
     setTimeout(() => r.classList.remove('entrando'), 1300);
     if(ab){ ab.classList.add('saindo'); setTimeout(() => ab.remove(), 420); }
