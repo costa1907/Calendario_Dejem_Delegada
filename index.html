@@ -1,9 +1,43 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 169
+  VERSÃO ATUAL: 174
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v174: CARTÃO "HOJE" (celular e computador). Nos dias com Delegada ou
+    Dejem aparece no topo um cartão com o local e o horário do serviço de
+    hoje e a situação: "Começa em 2h10", "Em andamento" (com quanto falta
+    para terminar e barra de progresso) ou "Encerrado". Atualiza sozinho a
+    cada 30 segundos. Serviço que vira a meia-noite (19x03, 22x06) continua
+    aparecendo até terminar. Tocar abre a ficha do dia (ou a escolha de
+    local/horário, se estiver incompleto). Não sai no PRINT.
+  v173: (1) FERIADOS nos três calendários (celular e computador): número em
+    lilás com um pontinho embaixo. Nacionais, o estadual de SP (9/7), os da
+    cidade de São Paulo (25/1 e Corpus Christi), Sexta-feira Santa e o
+    Carnaval (ponto facultativo). O nome aparece ao passar o mouse, na
+    barra ao selecionar o dia, na ficha do serviço e no quadro de próximos.
+    (2) MENOS INTERNET: para saber se há versão nova o app agora lê o
+    arquivo "versao.json" (alguns bytes) em vez de baixar o site inteiro a
+    cada minuto. ESSE ARQUIVO PRECISA SUBIR JUNTO COM O index.html A CADA
+    VERSÃO; se ele não existir, o app volta ao jeito antigo, só que a cada
+    10 minutos. (3) COMPUTADOR: os cartões de RESUMO DO MÊS (total, já
+    feito, falta fazer, barra) agora aparecem também no computador, em
+    cima de cada calendário, no lugar do "2026 / DELEGADA". O PRINT segue
+    com o título antigo. (4) O cartão ganhou uma terceira linha em todos:
+    a próxima Delegada / Dejem (ou a folga mensal, no SERVIÇO).
+  v172: nos painéis do celular, a palavra "serviços" virou o nome do
+    calendário: "3 Delegadas no mês", "1 Delegada", "2 Dejem" etc. (resumo
+    do mês e quadro de próximas Delegadas / Dejem).
+  v171: RESUMO DO MÊS redesenhado (celular). Agora mostra o total do mês em
+    destaque (quantidade + valor) e dois quadros lado a lado: JÁ FEITO e
+    FALTA FAZER, cada um com a QUANTIDADE de serviços e o VALOR. A barra de
+    progresso ganhou a porcentagem. Na aba SERVIÇO os dois quadros mostram
+    os dias de trabalho feitos e os que faltam, e a folga mensal continua.
+  v170: padronização DELEGADA x DEJEM. (1) Na ficha da DELEGADA, onde
+    aparecia "Módulo M1" agora aparece "CPA/M-1", igual à DEJEM (vale
+    também para os dias já salvos). (2) EDITAR VALORES: os nomes das cores
+    mostram todos os horários de cada uma (06x14 / 14x22 no azul cobalto e
+    07x15 / 15x23 no vermelho da DEJEM).
   v169: DEJEM (Metrô) com dois horários fixos na janela "Local e horário",
     igual à DELEGADA: 07:00 - 15:00 e 15:00 - 23:00. Um toque escolhe o
     horário; os campos Início/Término continuam ali para um horário
@@ -2366,6 +2400,83 @@ html.troca-aba[data-lado="dir"][data-layout="stack"] .cal-col, html.troca-aba[da
 #syncModalOverlay .sync-toggle-modo{ color:var(--dest-claro); }
 html[data-layout="stack"] #syncModalOverlay .modal-box{ padding:24px 18px 18px; }
 @media (prefers-reduced-motion:reduce){ html.troca-aba[data-lado] .cal-col, html.troca-aba[data-lado] .summaries-col, html.troca-aba[data-lado] #proximos{ animation:none !important; } }
+#ratesModalOverlay .modal-actions{ margin-top:18px; }
+
+/* ===== v171: resumo do mês redesenhado ===== */
+html[data-layout="stack"] .cal-resumo{ padding:15px 14px 14px; }
+.cr-topo{ margin-bottom:10px; }
+.cr-total{ display:flex; align-items:baseline; gap:8px; margin:0 0 12px; }
+.cr-total b{ font-size:34px; line-height:1; font-weight:800; letter-spacing:-.03em; color:#fff; font-variant-numeric:tabular-nums; }
+.cr-total span{ font-size:12.5px; font-weight:600; color:#aab5c2; }
+.cr-total em{ margin-left:auto; font-style:normal; font-size:19px; font-weight:800; letter-spacing:-.01em; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cr-duo{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.cr-q{ min-width:0; padding:11px 12px 12px; border-radius:13px; background:rgba(8,11,16,.55); border:1px solid rgba(255,255,255,.07); }
+.cr-r{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#8f9bab; margin-bottom:7px; }
+.cr-r i{ width:8px; height:8px; border-radius:50%; background:#5b6777; flex:none; }
+.cr-q.ok .cr-r{ color:#8fd66a; } .cr-q.ok .cr-r i{ background:#7ee04a; }
+.cr-q b{ display:block; font-size:19px; line-height:1.15; font-weight:800; letter-spacing:-.01em; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cr-q.ok b{ color:#8fe85c; }
+.cr-q em{ display:block; margin-top:4px; font-style:normal; font-size:12.5px; font-weight:600; color:#aab5c2; }
+.cr-prog{ display:flex; align-items:center; gap:10px; margin-top:13px; }
+.cr-prog .cr-barra{ flex:1; margin-top:0; height:5px; }
+.cr-prog span{ flex:none; font-size:11.5px; font-weight:700; color:#cfd8e3; font-variant-numeric:tabular-nums; }
+@media (max-width:350px){ .cr-q b{ font-size:16.5px; } .cr-total em{ font-size:16px; } }
+
+/* ===== v173: feriados + resumo do mês no computador ===== */
+table.dowtable td.feriado{ position:relative; }
+table.dowtable td.feriado:not(.pintado){ color:#c9a2ff; font-weight:700; }
+table.dowtable td.feriado::before{ content:''; position:absolute; left:50%; bottom:1px; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:#c9a2ff; box-shadow:0 0 0 1px rgba(0,0,0,.45); pointer-events:none; }
+html[data-layout="stack"] table.dowtable td.feriado::before{ bottom:2px; }
+.leg-grupo{ border-right:none !important; padding-right:0 !important; }
+.leg-feriado{ display:inline-flex; align-items:center; gap:7px; font-family:'Inter','Segoe UI',Arial,sans-serif; font-size:12px; font-weight:500; color:#c9a2ff; padding:6px 4px; white-space:nowrap; }
+.leg-feriado i{ width:7px; height:7px; border-radius:50%; background:#c9a2ff; flex:none; }
+html[data-layout="stack"] .leg-feriado{ font-size:12.5px; padding:8px 6px; }
+.fc-fer{ background:rgba(201,162,255,.16); color:#d9bfff; margin-left:6px; }
+.fc-fer[hidden]{ display:none; }
+.cr-folga span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-resumo[data-cal="delegada"] .cr-folga:not(.vazia) i{ background:#2f63ff; } .cal-resumo[data-cal="dejem"] .cr-folga:not(.vazia) i{ background:#ff2a3a; }
+/* computador: o mesmo cartão do celular em cima de cada calendário (o PRINT continua com o título antigo) */
+html[data-layout="desktop"] .cal-year, html[data-layout="desktop"] .cal-col h2{ display:none; }
+html[data-layout="desktop"] .cal-resumo{ display:block; zoom:var(--s); margin:0 0 12px; padding:15px 14px 14px; border-radius:16px; border:1px solid var(--linha); position:relative; overflow:hidden;
+  background:linear-gradient(135deg, rgba(var(--mr),.20), rgba(var(--mr),.03) 55%), #121720; font-family:'Inter','Segoe UI',Arial,sans-serif; }
+html.imprimindo .cal-resumo{ display:none !important; }
+html.imprimindo .cal-year, html.imprimindo .cal-col h2{ display:block !important; }
+html.entrando[data-layout="desktop"] .cal-resumo{ animation:v158Sobe .5s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){ html.entrando[data-layout="desktop"] .cal-resumo{ animation:none !important; } }
+
+/* ===== cartão HOJE ===== */
+#hoje{ margin:0 0 calc(16px * var(--s)); padding:calc(13px * var(--s)) calc(14px * var(--s)) calc(14px * var(--s)); border-radius:16px; border:1px solid rgba(255,176,32,.45); background:linear-gradient(135deg, rgba(255,176,32,.13), rgba(255,176,32,.02) 50%), #141a23; font-family:'Inter','Segoe UI',Arial,sans-serif; }
+#hoje[hidden]{ display:none; }
+html[data-layout="stack"] #hoje{ margin:0 0 12px; padding:12px; }
+.hj-cab{ display:flex; align-items:center; gap:8px; margin:0 0 calc(10px * var(--s)); font-size:calc(12.5px * var(--s)); color:#aab5c2; }
+.hj-cab b{ font-size:calc(12px * var(--s)); font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:#ffc14d; }
+.hj-ponto{ width:8px; height:8px; border-radius:50%; background:#ffb020; flex:none; }
+.hj-grade{ display:grid; grid-template-columns:1fr; gap:calc(9px * var(--s)); }
+html[data-layout="desktop"] .hj-grade{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+.hj-item{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:calc(6px * var(--s)) calc(12px * var(--s)); text-align:left; width:100%; padding:calc(12px * var(--s)) calc(13px * var(--s)) calc(12px * var(--s)) calc(16px * var(--s));
+  border-radius:13px; border:1px solid var(--linha); background:linear-gradient(180deg, #151b25, #10151d); color:#e8edf3; font-family:inherit; cursor:pointer; position:relative; overflow:hidden; }
+.hj-item::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--acc); }
+.hj-item:active{ transform:scale(.985); }
+.hj-txt{ min-width:0; display:flex; flex-direction:column; gap:calc(2px * var(--s)); }
+.hj-cal{ font-size:calc(10.5px * var(--s)); font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--acc-t); }
+.hj-local{ font-size:calc(19px * var(--s)); line-height:1.2; font-weight:800; letter-spacing:-.01em; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hj-local.vazio{ color:#8793a3; font-weight:600; font-size:calc(16px * var(--s)); }
+.hj-hora{ font-size:calc(13.5px * var(--s)); font-weight:600; color:#cfd8e3; font-variant-numeric:tabular-nums; white-space:pre; overflow:hidden; text-overflow:ellipsis; }
+.hj-st{ text-align:right; display:flex; flex-direction:column; gap:calc(3px * var(--s)); align-items:flex-end; }
+.hj-st b{ font-size:calc(12.5px * var(--s)); font-weight:800; padding:calc(6px * var(--s)) calc(11px * var(--s)); border-radius:999px; white-space:nowrap; background:#232830; color:#cfd8e3; font-variant-numeric:tabular-nums; }
+.hj-st em{ font-style:normal; font-size:calc(11.5px * var(--s)); color:#8f9bab; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.hj-item[data-estado="antes"] .hj-st b{ background:#ffb020; color:#1d1400; }
+.hj-item[data-estado="agora"] .hj-st b{ background:rgba(97,240,0,.16); color:#a6ff7a; box-shadow:0 0 0 1px rgba(97,240,0,.5) inset; }
+.hj-item[data-estado="agora"] .hj-st b::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:#7ee04a; margin-right:7px; vertical-align:1px; animation:hjPulsa 1.6s ease-in-out infinite; }
+@keyframes hjPulsa{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
+.hj-barra{ grid-column:1 / -1; height:4px; border-radius:4px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:calc(4px * var(--s)); }
+.hj-barra[hidden]{ display:none; }
+.hj-barra i{ display:block; height:100%; border-radius:4px; background:#7ee04a; }
+.hj-item:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+html.entrando #hoje{ animation:v158Sobe .5s .08s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion:reduce){ html.entrando #hoje, .hj-item[data-estado="agora"] .hj-st b::before{ animation:none !important; } }
+html[data-layout="stack"] .hj-aisp{ display:none; }   /* no celular a AISP fica só na ficha */
+.hj-aisp{ color:#8f9bab; font-weight:500; }
 </style>
 </head>
 <body>
@@ -2426,6 +2537,9 @@ html[data-layout="stack"] #syncModalOverlay .modal-box{ padding:24px 18px 18px; 
     <span class="group-label">Dejem:</span>
     <div class="swatch" data-color="vermelho"><span class="box" style="background:var(--vermelho)"></span><span class="swatch-value">R$&nbsp;<span class="legenda-valor" id="legendaVermelho">307,36</span></span></div>
   </div>
+  <div class="palette-group leg-grupo" data-cal="todas">
+    <span class="leg-feriado"><i></i>Feriado</span>
+  </div>
   <div class="palette-group" data-cal="todas">
     <span class="group-label">Ações:</span>
     <div class="swatch apagar" data-color=""><span class="box"></span>Apagar</div>
@@ -2433,6 +2547,7 @@ html[data-layout="stack"] #syncModalOverlay .modal-box{ padding:24px 18px 18px; 
 </div>
 <div class="escala-dica" id="dicaEscala" hidden>Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.</div>
 <div class="calendars" id="calendars"></div>
+<section id="hoje" aria-label="Serviço de hoje" hidden></section>
 <section id="proximos" aria-label="Próximos serviços" hidden></section>
 <div id="barraSel" role="region" aria-live="polite" aria-label="Seleção de dias" hidden></div>
 </div><!-- /.page-wrap -->
@@ -2598,6 +2713,7 @@ html[data-layout="stack"] #syncModalOverlay .modal-box{ padding:24px 18px 18px; 
         <div class="sv-eyebrow"><i class="sv-dot"></i><span id="fichaBadge"></span></div>
         <h3 class="fc-data" id="fichaData"></h3>
         <span class="fc-quando" id="fichaQuando"></span>
+        <span class="fc-quando fc-fer" id="fichaFeriado" hidden></span>
       </div>
       <button type="button" class="fc-x" id="fichaFechar" aria-label="Fechar"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"/></svg></button>
     </div>
@@ -2750,10 +2866,10 @@ const DEFAULT_RATES = {
   dejem: {vermelho:307.36}
 };
 const RATE_LABELS = {
-  rosa: "Azul Cobalto (06x14)",
+  rosa: "Azul Cobalto (06x14 / 14x22)",
   roxo: "Amarelo Ouro (19x03)",
   dourado: "Laranja Elétrico (22x06)",
-  vermelho: "Vermelho"
+  vermelho: "Vermelho (07x15 / 15x23)"
 };
 function loadRates(){
   let parsed = null;
@@ -2900,6 +3016,26 @@ function fmtBRL(v){
   return v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// FERIADOS (v173): nacionais + estado de SP + cidade de São Paulo + móveis
+const _feriadosCache = {};
+function feriadosDoAno(y){
+  if(_feriadosCache[y]) return _feriadosCache[y];
+  const f = {};
+  const fixo = { '01-01':'Confraternização Universal', '01-25':'Aniversário de São Paulo', '04-21':'Tiradentes', '05-01':'Dia do Trabalho',
+    '07-09':'Revolução Constitucionalista', '09-07':'Independência do Brasil', '10-12':'Nossa Senhora Aparecida', '11-02':'Finados',
+    '11-15':'Proclamação da República', '11-20':'Consciência Negra', '12-25':'Natal' };
+  Object.keys(fixo).forEach(md => { f[y + '-' + md] = fixo[md]; });
+  // Páscoa (algoritmo de Meeus/Butcher) e os feriados que dependem dela
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, g = Math.floor((8 * b + 13) / 25),
+    h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+    mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  const movel = (dias, nome) => { const dt = new Date(y, mes - 1, dia + dias); f[fmtDate(dt.getFullYear(), dt.getMonth(), dt.getDate())] = nome; };
+  movel(-48, 'Carnaval (ponto facultativo)'); movel(-47, 'Carnaval (ponto facultativo)');
+  movel(-2, 'Sexta-feira Santa'); movel(60, 'Corpus Christi');
+  return (_feriadosCache[y] = f);
+}
+function feriadoEm(dateStr){ return feriadosDoAno(Number(dateStr.slice(0,4)))[dateStr] || ''; }
+
 function buildMonthGrid(year, month){
   // returns array of weeks, each week array of 7 (day number or null)
   const first = new Date(year, month, 1);
@@ -2977,7 +3113,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 169;
+const VERSAO_SITE = 174;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -3202,19 +3338,34 @@ function usuarioOcupado(){
   }catch(e){}
   return false;
 }
+let _ultimaVerifCompleta = 0;
 async function verificarNovaVersao(){
   if(_verificandoVersao || !navigator.onLine) return;
   _verificandoVersao = true;
   try{
-    const r = await fetch(location.pathname, { cache: 'reload' });
-    if(!r.ok) return;
-    const m = (await r.text()).match(/const VERSAO_SITE\s*=\s*(\d+)/);
-    if(m && Number(m[1]) > VERSAO_SITE){
+    // jeito leve: um arquivo de poucos bytes com o número da versão publicada
+    let nova = null;
+    try{
+      const rv = await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' });
+      if(rv.ok){ const j = await rv.json(); if(j && Number(j.versao) > 0) nova = Number(j.versao); }
+    }catch(e){}
+    if(nova === null){
+      // versao.json não foi publicado: confere pelo próprio site, mas só a cada 10 minutos
+      if(Date.now() - _ultimaVerifCompleta < 600000) return;
+      _ultimaVerifCompleta = Date.now();
+      const r = await fetch(location.pathname, { cache: 'reload' });
+      if(!r.ok) return;
+      const m = (await r.text()).match(/const VERSAO_SITE\s*=\s*(\d+)/);
+      if(m) nova = Number(m[1]);
+    }
+    if(nova && nova > VERSAO_SITE){
       if(usuarioOcupado()) return;   // tenta de novo no próximo minuto
+      // não recarrega em laço se o servidor ainda entrega o index.html antigo: nova tentativa só após 5 minutos
       let ja = null;
-      try{ ja = sessionStorage.getItem('cbpm_auto_reload'); }catch(e){}
-      if(ja === m[1]) return;
-      try{ sessionStorage.setItem('cbpm_auto_reload', m[1]); }catch(e){}
+      try{ ja = (sessionStorage.getItem('cbpm_auto_reload') || '').split('|'); }catch(e){}
+      if(ja && Number(ja[0]) === nova && Date.now() - Number(ja[1] || 0) < 300000) return;
+      try{ sessionStorage.setItem('cbpm_auto_reload', nova + '|' + Date.now()); }catch(e){}
+      try{ await fetch(location.pathname, { cache: 'reload' }); }catch(e){}
       location.reload();
     }
   }catch(e){} finally { _verificandoVersao = false; }
@@ -3446,6 +3597,8 @@ function applyLayout(forcar){
     if(px && cals){
       if(desktop){ if(cals.nextElementSibling !== px) cals.after(px); }
       else if(px.nextElementSibling !== cals) cals.before(px);
+      const hj = document.getElementById('hoje');
+      if(hj){ const ref = desktop ? cals : px; if(hj.nextElementSibling !== ref) ref.before(hj); }
       if(typeof renderProximos === 'function' && typeof LOCAIS !== 'undefined'){ try{ renderProximos(); }catch(e){} }
     } }
   alignSummaries();
@@ -3560,16 +3713,21 @@ let mesAnimar = null;
 // v164: dias que acabaram de ser pintados (acendem no próximo redesenho) e últimos totais (para a contagem)
 let recemPintados = new Set();
 const ultimosTotais = {};
+const valoresAnimando = new Set();   // contagens em andamento (o PRINT termina todas antes de fotografar)
+function terminarContagens(){ Array.from(valoresAnimando).forEach(f => { try{ f(); }catch(e){} }); }
 function animarValor(td, de, para, textoFinal){
   try{
     if(document.documentElement.classList.contains('imprimindo') || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
     const t0 = performance.now(), dur = 700;
     td.classList.add('rs-mudou');
-    const passo = t => {
-      if(!td.isConnected) return;
-      const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
-      if(p < 1){ td.textContent = 'R$ ' + fmtBRL(de + (para - de) * e); requestAnimationFrame(passo); }
-      else td.textContent = textoFinal;
+    const fim = () => { td.textContent = textoFinal; valoresAnimando.delete(fim); };
+    valoresAnimando.add(fim);
+    const passo = () => {
+      if(!valoresAnimando.has(fim)) return;
+      if(!td.isConnected){ valoresAnimando.delete(fim); return; }
+      const p = Math.max(0, Math.min(1, (performance.now() - t0) / dur)), e = 1 - Math.pow(1 - p, 3);
+      if(p < 1 && !document.documentElement.classList.contains('imprimindo')){ td.textContent = 'R$ ' + fmtBRL(de + (para - de) * e); requestAnimationFrame(passo); }
+      else fim();
     };
     requestAnimationFrame(passo);
   }catch(e){}
@@ -3655,6 +3813,8 @@ function render(){
             td.dataset.cal = cal.key;
             td.dataset.date = dateStr;
             if(dateStr === hojeStr()) td.classList.add('hoje');
+            const fer = feriadoEm(dateStr);
+            if(fer){ td.classList.add('feriado'); td.title = 'Feriado: ' + fer; }
             const color = getColorFor(cal.key, currentYear, dateStr);
             if(color){
               td.classList.add('pintado');
@@ -3662,7 +3822,7 @@ function render(){
               td.style.background = COLORS[color];
               td.style.color = (color === 'verde') ? '#111' : '#fff';
               const det = cal.key !== 'servico' ? detalhes[cellKey(cal.key, currentYear, dateStr)] : null;
-              if(det){ td.classList.add('tem-local'); td.title = resumoDetalhe(det); }
+              if(det){ td.classList.add('tem-local'); td.title = resumoDetalhe(det) + (fer ? ' · Feriado: ' + fer : ''); }
             }
             if(selection.has(cellKey(cal.key, currentYear, dateStr))){
               td.classList.add('selected');
@@ -3722,6 +3882,7 @@ function render(){
   container.appendChild(summariesCol);
 
   renderProximos();
+  renderHoje();
   alignSummaries();
   recemPintados = new Set();
 }
@@ -3740,27 +3901,47 @@ function buildResumo(cal){
     n++;
     if(k.split('|')[2] < hs){ feitos++; vFeito += v; } else vFalta += v;
   });
-  const dinheiro = cal.key !== 'servico';
-  const itens = dinheiro
-    ? [[String(n), n === 1 ? 'serviço' : 'serviços'], ['R$ ' + fmtBRL(vFeito), 'já feito'], ['R$ ' + fmtBRL(vFalta), 'falta fazer']]
-    : [[String(n), n === 1 ? 'dia de trabalho' : 'dias de trabalho'], [String(feitos), feitos === 1 ? 'feito' : 'feitos'], [String(n - feitos), n - feitos === 1 ? 'falta' : 'faltam']];
-  el.innerHTML = '<div class="cr-topo"><div class="cr-mes"></div><span class="cr-cal"></span></div><div class="cr-nums"></div><div class="cr-barra"><i></i></div>';
+  const dinheiro = cal.key !== 'servico', falta = n - feitos;
+  const un = (q, sing, plur) => q + ' ' + (q === 1 ? sing : plur);
+  const nomeS = cal.key === 'dejem' ? 'Dejem' : 'Delegada', nomeP = cal.key === 'dejem' ? 'Dejem' : 'Delegadas';
+  const pct = n ? Math.round(feitos / n * 100) : 0;
+  el.innerHTML = '<div class="cr-topo"><div class="cr-mes"></div><span class="cr-cal"></span></div>' +
+    '<div class="cr-total"><b></b><span></span><em></em></div>' +
+    '<div class="cr-duo"><div class="cr-q ok"><span class="cr-r"><i></i>Já feito</span><b></b><em></em></div>' +
+    '<div class="cr-q"><span class="cr-r"><i></i>Falta fazer</span><b></b><em></em></div></div>' +
+    '<div class="cr-prog"><div class="cr-barra"><i></i></div><span></span></div>';
   el.querySelector('.cr-mes').textContent = anoAtual ? MESES_CAP[agora.getMonth()] + ' ' + currentYear : 'Ano de ' + currentYear;
   el.querySelector('.cr-cal').textContent = cal.title;
-  const nums = el.querySelector('.cr-nums');
-  itens.forEach((it, i) => {
-    const d = document.createElement('div'); d.innerHTML = '<b></b><span></span>';
-    d.querySelector('b').textContent = it[0]; d.querySelector('span').textContent = it[1];
-    if(dinheiro && i > 0) d.querySelector('b').className = i === 1 ? 'cr-ok' : 'cr-falta';
-    nums.appendChild(d);
+  const tot = el.querySelector('.cr-total');
+  tot.querySelector('b').textContent = n;
+  tot.querySelector('span').textContent = dinheiro ? (n === 1 ? nomeS : nomeP) + (anoAtual ? ' no mês' : ' no ano') : (n === 1 ? 'dia de trabalho' : 'dias de trabalho') + (anoAtual ? ' no mês' : ' no ano');
+  tot.querySelector('em').textContent = dinheiro ? 'R$ ' + fmtBRL(vFeito + vFalta) : '';
+  const qs = el.querySelectorAll('.cr-q');
+  [[feitos, vFeito], [falta, vFalta]].forEach((par, i) => {
+    qs[i].querySelector('b').textContent = dinheiro ? 'R$ ' + fmtBRL(par[1]) : un(par[0], 'dia', 'dias');
+    qs[i].querySelector('em').textContent = dinheiro ? un(par[0], nomeS, nomeP) : (i === 0 ? 'já cumpridos' : 'pela frente');
   });
-  el.querySelector('.cr-barra i').style.width = (n ? Math.round(feitos / n * 100) : 0) + '%';
-  if(cal.key === 'servico' && anoAtual){
-    const folgas = Object.keys(data).filter(k => k.indexOf(pref) === 0 && data[k] === 'verde').map(k => Number(k.slice(-2))).sort((a, b) => a - b);
-    const f = document.createElement('div'); f.className = 'cr-folga' + (folgas.length ? '' : ' vazia');
-    f.innerHTML = '<i></i><span></span>';
-    f.querySelector('span').textContent = !folgas.length ? 'Folga mensal ainda não marcada neste mês'
-      : 'Folga mensal: ' + (folgas.length === 1 ? 'dia ' + folgas[0] : 'dias ' + folgas.slice(0, -1).join(', ') + ' e ' + folgas[folgas.length - 1]);
+  el.querySelector('.cr-barra i').style.width = pct + '%';
+  el.querySelector('.cr-prog span').textContent = n ? pct + '% feito' : (dinheiro ? (cal.key === 'dejem' ? 'Nenhuma Dejem marcada' : 'Nenhuma Delegada marcada') : 'Nenhum dia marcado');
+  // terceira linha (sempre existe, para os três cartões terem a mesma altura no computador)
+  { const f = document.createElement('div'); f.className = 'cr-folga'; f.innerHTML = '<i></i><span></span>';
+    let txt = '', vazio = false;
+    if(cal.key === 'servico'){
+      const folgas = Object.keys(data).filter(k => k.indexOf(pref) === 0 && data[k] === 'verde').map(k => Number(k.slice(-2))).sort((a, b) => a - b);
+      if(!anoAtual) txt = 'Folgas mensais marcadas no ano: ' + folgas.length;
+      else if(!folgas.length){ txt = 'Folga mensal ainda não marcada neste mês'; vazio = true; }
+      else txt = 'Folga mensal: ' + (folgas.length === 1 ? 'dia ' + folgas[0] : 'dias ' + folgas.slice(0, -1).join(', ') + ' e ' + folgas[folgas.length - 1]);
+    } else if(anoAtual){
+      const prox = Object.keys(data).filter(k => k.indexOf(cal.key + '|') === 0 && k.split('|')[2] >= hs).sort((a, b) => a.split('|')[2] < b.split('|')[2] ? -1 : 1)[0];
+      if(!prox){ txt = cal.key === 'dejem' ? 'Nenhuma Dejem marcada de hoje em diante' : 'Nenhuma Delegada marcada de hoje em diante'; vazio = true; }
+      else {
+        const dp = dataDeStr(prox.split('|')[2]), fl = diasEntreDatas(dataDeStr(hs), dp), det = detalhes[prox], loc = localDoDetalhe(cal.key, det);
+        txt = 'Próxima: ' + (fl === 0 ? 'hoje' : fl === 1 ? 'amanhã' : SEMANA[dp.getDay()].slice(0,3) + ' ' + dp.getDate() + '/' + String(dp.getMonth() + 1).padStart(2,'0'))
+          + (loc ? ' · ' + nomeCurto(cal.key, loc.nome) : '') + (det && det.i ? ' · ' + det.i : '');
+      }
+    } else { txt = n ? 'Média de R$ ' + fmtBRL((vFeito + vFalta) / 12) + ' por mês' : 'Nada marcado neste ano'; vazio = !n; }
+    if(vazio) f.classList.add('vazia');
+    f.querySelector('span').textContent = txt;
     el.appendChild(f);
   }
   return el;
@@ -3936,7 +4117,8 @@ function atualizarBarra(){
     document.documentElement.classList.remove('tem-barra'); return;
   }
   const n = alvo.length, dias = n + (n === 1 ? ' dia' : ' dias');
-  const resumo = barraResumo(alvo).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const ferSel = alvo.length === 1 ? feriadoEm(alvo[0].split('|')[2]) : '';
+  const resumo = (barraResumo(alvo) + (ferSel ? ' · Feriado: ' + ferSel : '')).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   el.hidden = false;
   document.documentElement.classList.add('tem-barra');
   if(barraPendente === null){
@@ -4028,24 +4210,24 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && barraPenden
 // Para acrescentar/retirar um local, basta editar as listas abaixo.
 const LOCAIS = {
   delegada: [
-    { nome: "25 de Março", aisp: "85760", modulo: "M1" },
-    { nome: "Florêncio de Abreu", aisp: "85759", modulo: "M1" },
-    { nome: "José Paulino", aisp: "85758", modulo: "M1" },
-    { nome: "Triângulo Histórico", aisp: "85757", modulo: "M1" },
-    { nome: "Paulista", aisp: "85756", modulo: "M1" },
-    { nome: "Centro Novo", aisp: "85755", modulo: "M1" },
-    { nome: "Liberdade", aisp: "85754", modulo: "M1" },
-    { nome: "Roosevelt", aisp: "85753", modulo: "M1" },
-    { nome: "Sé", aisp: "85752", modulo: "M1" },
-    { nome: "Marechal Deodoro", aisp: "85751", modulo: "M1" },
-    { nome: "Santa Casa", aisp: "85750", modulo: "M1" },
-    { nome: "Cambuci", aisp: "85749", modulo: "M1" },
-    { nome: "Santa Ifigênia", aisp: "85748", modulo: "M1" },
-    { nome: "Volante Cenas Abertas de Uso", aisp: "85745", modulo: "M1" },
-    { nome: "Oriente", aisp: "85744", modulo: "M1" },
-    { nome: "Concórdia", aisp: "85743", modulo: "M1" },
-    { nome: "Brás", aisp: "85742", modulo: "M1" },
-    { nome: "Feira da Madrugada", aisp: "85741", modulo: "M1" }
+    { nome: "25 de Março", aisp: "85760", modulo: "CPA/M-1" },
+    { nome: "Florêncio de Abreu", aisp: "85759", modulo: "CPA/M-1" },
+    { nome: "José Paulino", aisp: "85758", modulo: "CPA/M-1" },
+    { nome: "Triângulo Histórico", aisp: "85757", modulo: "CPA/M-1" },
+    { nome: "Paulista", aisp: "85756", modulo: "CPA/M-1" },
+    { nome: "Centro Novo", aisp: "85755", modulo: "CPA/M-1" },
+    { nome: "Liberdade", aisp: "85754", modulo: "CPA/M-1" },
+    { nome: "Roosevelt", aisp: "85753", modulo: "CPA/M-1" },
+    { nome: "Sé", aisp: "85752", modulo: "CPA/M-1" },
+    { nome: "Marechal Deodoro", aisp: "85751", modulo: "CPA/M-1" },
+    { nome: "Santa Casa", aisp: "85750", modulo: "CPA/M-1" },
+    { nome: "Cambuci", aisp: "85749", modulo: "CPA/M-1" },
+    { nome: "Santa Ifigênia", aisp: "85748", modulo: "CPA/M-1" },
+    { nome: "Volante Cenas Abertas de Uso", aisp: "85745", modulo: "CPA/M-1" },
+    { nome: "Oriente", aisp: "85744", modulo: "CPA/M-1" },
+    { nome: "Concórdia", aisp: "85743", modulo: "CPA/M-1" },
+    { nome: "Brás", aisp: "85742", modulo: "CPA/M-1" },
+    { nome: "Feira da Madrugada", aisp: "85741", modulo: "CPA/M-1" }
   ],
   dejem: [   // Metrô, CPA/M-1
     { nome: "Estação Armênia", aisp: "84760", modulo: "CPA/M-1" },
@@ -4302,7 +4484,7 @@ function renderProximos(){
     let soma = 0; todos.forEach(x => { const v = RATES[x.cal] && RATES[x.cal][x.cor]; if(v) soma += v; });
     const res = document.createElement('span'); res.className = 'px-res';
     res.innerHTML = '<b></b> · <i></i>';
-    res.querySelector('b').textContent = todos.length + (todos.length === 1 ? ' serviço' : ' serviços');
+    res.querySelector('b').textContent = todos.length + ' ' + (filtro === 'dejem' ? 'Dejem' : filtro === 'delegada' ? (todos.length === 1 ? 'Delegada' : 'Delegadas') : (todos.length === 1 ? 'serviço' : 'serviços'));
     res.querySelector('i').textContent = 'R$ ' + fmtBRL(soma);
     cab.appendChild(res);
   }
@@ -4333,6 +4515,7 @@ function renderProximos(){
     const sem = SEMANA[d.getDay()].slice(0,3);
     b.querySelector('.px-q').textContent = (falta === 0 ? 'Hoje' : falta === 1 ? 'Amanhã' : sem.charAt(0).toUpperCase() + sem.slice(1) + (d.getFullYear() !== hoje.getFullYear() ? ' · ' + d.getFullYear() : ''))
       + (filtro ? (falta > 1 ? ' · em ' + falta + ' dias' : '') : ' · ' + (x.cal === 'dejem' ? 'DEJEM' : 'DELEGADA'));
+    if(feriadoEm(x.date)) b.querySelector('.px-q').textContent += ' · feriado';
     const l = b.querySelector('.px-l'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
     b.querySelector('.px-h').textContent = temHora ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
     const incompleto = !loc || !temHora;
@@ -4346,6 +4529,60 @@ function renderProximos(){
   });
   el.appendChild(grade);
 }
+
+// ---------- Cartão HOJE: o serviço de hoje com contagem até começar / terminar ----------
+function duracaoCurta(min){ min = Math.max(0, Math.round(min)); const h = Math.floor(min / 60), m = min % 60; return h ? h + 'h' + (m ? String(m).padStart(2,'0') : '') : m + ' min'; }
+function servicosDeHoje(agora){
+  const out = [], hs = fmtDate(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const on = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1), os = fmtDate(on.getFullYear(), on.getMonth(), on.getDate());
+  Object.keys(data).forEach(k => {
+    const p = k.split('|');
+    if(!LOCAIS[p[0]] || (p[2] !== hs && p[2] !== os)) return;
+    const det = detalhes[k] || null, a = det ? minDe(det.i) : NaN, b = det ? minDe(det.f) : NaN, d0 = dataDeStr(p[2]);
+    let ini = null, fim = null;
+    if(!isNaN(a) && !isNaN(b) && a !== b){ ini = new Date(d0.getTime() + a * 60000); fim = new Date(ini.getTime() + (((b - a) + 1440) % 1440) * 60000); }
+    if(p[2] === os && !(fim && fim > agora)) return;   // de ontem só entra o que ainda não terminou (virou a meia-noite)
+    out.push({ k: k, cal: p[0], cor: data[k], det: det, ini: ini, fim: fim, ontem: p[2] === os });
+  });
+  return out.sort((x, y) => (x.ini ? x.ini.getTime() : 9e15) - (y.ini ? y.ini.getTime() : 9e15));
+}
+function renderHoje(){
+  const el = document.getElementById('hoje');
+  if(!el) return;
+  const agora = new Date(), lista = semConta() ? [] : servicosDeHoje(agora);
+  if(!lista.length){ el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false; el.innerHTML = '';
+  const cab = document.createElement('div'); cab.className = 'hj-cab';
+  cab.innerHTML = '<span class="hj-ponto"></span><b>Hoje</b><span></span>';
+  cab.lastChild.textContent = SEMANA[agora.getDay()] + ', ' + agora.getDate() + ' de ' + MESES_CAP[agora.getMonth()].toLowerCase();
+  el.appendChild(cab);
+  const grade = document.createElement('div'); grade.className = 'hj-grade'; el.appendChild(grade);
+  lista.forEach(x => {
+    const a = ACENTO[x.cor] || { c:'#00B0F0', t:'#6fd3ff' }, loc = localDoDetalhe(x.cal, x.det);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'hj-item';
+    b.style.setProperty('--acc', a.c); b.style.setProperty('--acc-t', a.t);
+    b.innerHTML = '<span class="hj-txt"><span class="hj-cal"></span><span class="hj-local"></span><span class="hj-hora"></span></span>' +
+      '<span class="hj-st"><b></b><em></em></span><span class="hj-barra"><i></i></span>';
+    b.querySelector('.hj-cal').textContent = (x.cal === 'dejem' ? 'DEJEM · Metrô' : 'DELEGADA') + (x.ontem ? ' · começou ontem' : '');
+    const l = b.querySelector('.hj-local'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
+    { const hh = b.querySelector('.hj-hora'); hh.textContent = x.ini ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
+      if(x.ini && loc && loc.aisp){ const ai = document.createElement('span'); ai.className = 'hj-aisp'; ai.textContent = '  ·  AISP ' + loc.aisp; hh.appendChild(ai); } }
+    const st = b.querySelector('.hj-st'), barra = b.querySelector('.hj-barra');
+    let estado = 'sem', t1 = 'Sem horário', t2 = 'toque para informar', pct = 0;
+    if(x.ini){
+      if(agora < x.ini){ estado = 'antes'; t1 = 'Começa em ' + duracaoCurta((x.ini - agora) / 60000); t2 = 'às ' + x.det.i; }
+      else if(agora < x.fim){ estado = 'agora'; t1 = 'Em andamento'; t2 = 'termina em ' + duracaoCurta((x.fim - agora) / 60000); pct = Math.round((agora - x.ini) / (x.fim - x.ini) * 100); }
+      else { estado = 'fim'; t1 = 'Encerrado'; t2 = 'terminou às ' + x.det.f; pct = 100; }
+    }
+    b.dataset.estado = estado;
+    st.querySelector('b').textContent = t1; st.querySelector('em').textContent = t2;
+    barra.querySelector('i').style.width = pct + '%'; barra.hidden = estado !== 'agora';
+    b.addEventListener('click', () => { vibrar(8); if(!loc || !x.ini) abrirServico({ modo:'editar', keys:[x.k], cal: x.cal, cor: x.cor }); else abrirFicha(x.k); });
+    grade.appendChild(b);
+  });
+}
+setInterval(() => { if(document.visibilityState === 'visible') { try{ renderHoje(); }catch(e){} } }, 30000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ try{ renderHoje(); }catch(e){} } });
 
 // ---------- Ficha do serviço (toque num dia já pintado) ----------
 const fichaOverlay = document.getElementById('fichaOverlay');
@@ -4366,11 +4603,12 @@ function abrirFicha(key){
   const falta = diasEntreDatas(dataDeStr(hojeStr()), d), q = document.getElementById('fichaQuando');
   q.textContent = falta === 0 ? 'Hoje' : falta === 1 ? 'Amanhã' : falta === -1 ? 'Ontem' : falta > 0 ? 'Em ' + falta + ' dias' : 'Há ' + (-falta) + ' dias';
   q.classList.toggle('hoje', falta === 0);
+  { const ff = document.getElementById('fichaFeriado'), nf = feriadoEm(p[2]); ff.hidden = !nf; ff.textContent = nf ? 'Feriado: ' + nf : ''; }
   const loc = localDoDetalhe(cal, det), elLoc = document.getElementById('fichaLocal'), elHora = document.getElementById('fichaHora');
   document.getElementById('fichaLocalRot').textContent = dejem ? 'Estação' : 'Área de atuação';
   elLoc.textContent = loc ? loc.nome : 'Local não informado';
   elLoc.classList.toggle('vazio', !loc);
-  document.getElementById('fichaAisp').textContent = loc ? [loc.aisp ? 'AISP ' + loc.aisp : '', loc.modulo ? (dejem ? loc.modulo : 'Módulo ' + loc.modulo) : ''].filter(Boolean).join(' · ') : '';
+  document.getElementById('fichaAisp').textContent = loc ? [loc.aisp ? 'AISP ' + loc.aisp : '', loc.modulo ? loc.modulo : ''].filter(Boolean).join(' · ') : '';
   const temHora = !!(det && det.i && det.f);
   elHora.textContent = temHora ? faixaTxt(det.i, det.f) : 'Horário não informado';
   elHora.classList.toggle('vazio', !temHora);
@@ -4735,6 +4973,7 @@ async function gerarImagemCalendarios(){
   // A imagem sempre sai no layout de computador (escala 1, os 3 calendários
   // lado a lado + valores), mesmo quando o botão é clicado no celular ou com
   // a janela em outro tamanho. Depois volta ao layout normal.
+  terminarContagens();
   applyLayout('print');
   document.documentElement.classList.add('imprimindo');
   ajustarResumosParaPrint();
