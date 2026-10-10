@@ -1,9 +1,19 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 159
+  VERSÃO ATUAL: 160
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v160: CORREÇÃO do travamento no iPhone ao dar zoom várias vezes ("Um
+    problema ocorreu repetidamente") e dos calendários piscando/sumindo
+    durante o zoom. A causa eram efeitos do visual novo (v158) que pesam
+    demais na memória do Safari quando a página é ampliada: o desfoque de
+    "vidro" atrás do menu/legenda/abas/janelas, o fundo com brilho preso à
+    tela, o degradê animado no ano e as sombras em cada dia pintado e em
+    cada mês. Agora: o desfoque saiu de todo o site (fundo sólido na mesma
+    cor), o brilho do fundo rola junto com a página e, em telas de toque,
+    o ano fica com degradê parado e os dias/meses ficam sem sombra. No
+    computador (mouse) o relevo e o degradê animado continuam.
   v159: (1) ÍCONES nos botões do menu: calendário com "+" (CRIAR ANO), setas
     em ciclo (ESCALA), cifrão (EDITAR VALORES), câmera (PRINT), seta para
     cima (EXPORTAR) e seta para baixo (IMPORTAR). No celular o ícone fica
@@ -2108,6 +2118,29 @@ html[data-layout="stack"] .px-dia{ width:50px; }
 @media (min-width:560px){ html[data-layout="stack"] .px-grade{ grid-template-columns:1fr 1fr; } }
 html.entrando #proximos{ animation:v158Sobe .5s .12s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion:reduce){ html.entrando #proximos{ animation:none !important; } .px-item, .topbar button .ic{ transition:none !important; } }
+
+/* ===== v160: leveza no celular (o zoom no iPhone derrubava a página) ===== */
+/* 1) sem desfoque de fundo em lugar nenhum: é o efeito mais caro ao ampliar */
+.topbar, .palette, .modal-overlay, .sv-overlay, #barraSel, #proximos,
+html[data-layout="stack"] .tabs, html[data-layout="stack"] .palette{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+.topbar, .palette, #proximos, html[data-layout="stack"] .tabs{ background:#141a23; }
+html[data-layout="stack"] .palette{ background:#111720; }
+#barraSel{ background:#161c26; }
+.modal-overlay, .sv-overlay{ background:rgba(3,5,8,.82); }
+/* 2) brilho do fundo: deixa de ser uma camada presa à tela e rola com a página */
+body{ position:relative; }
+body::before{ position:absolute; inset:0 0 auto 0; height:900px; }
+/* 3) telas de toque: nada animando o tempo todo e sem sombras repetidas centenas de vezes */
+@media (hover:none), (pointer:coarse){
+  .cal-year{ animation:none !important; background-size:100% 100%; }
+  .month, .summary{ box-shadow:none !important; }
+  table.dowtable td.pintado{ box-shadow:none !important; text-shadow:none !important; }
+  table.dowtable td.hoje, table.dowtable td.pintado.hoje{ box-shadow:inset 0 0 0 2px #ffb020 !important; }
+  table.dowtable td.selected{ box-shadow:none !important; }
+  table.dowtable td{ transition:none !important; }
+  .topbar, .palette, #proximos, .px-item, .px-dia, .summary tr.total td.rs{ box-shadow:none !important; text-shadow:none !important; }
+  .swatch .box{ box-shadow:0 0 0 2px rgba(255,255,255,.1) !important; }
+}
 </style>
 </head>
 <body>
@@ -2678,7 +2711,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 159;
+const VERSAO_SITE = 160;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
