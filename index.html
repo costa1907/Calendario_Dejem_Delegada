@@ -1,9 +1,16 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 174
+  VERSÃO ATUAL: 175
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v175: CARTÃO "HOJE" refeito. (1) No celular ele só aparece na aba do
+    próprio serviço: a Delegada de hoje na aba DELEGADA e a Dejem de hoje
+    na aba DEJEM; na aba SERVIÇO não aparece. No computador mostra os dois.
+    (2) Visual igual ao dos outros quadros: saiu o fundo e o contorno
+    dourados; mesmo painel, mesmo título e mesmo tipo de cartão do quadro
+    de próximos, com um bloco na cor do serviço mostrando a hora de início.
+    O selo "Começa em..." usa a cor do serviço e o "Em andamento" o verde.
   v174: CARTÃO "HOJE" (celular e computador). Nos dias com Delegada ou
     Dejem aparece no topo um cartão com o local e o horário do serviço de
     hoje e a situação: "Começa em 2h10", "Em andamento" (com quanto falta
@@ -2444,37 +2451,39 @@ html.imprimindo .cal-year, html.imprimindo .cal-col h2{ display:block !important
 html.entrando[data-layout="desktop"] .cal-resumo{ animation:v158Sobe .5s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion:reduce){ html.entrando[data-layout="desktop"] .cal-resumo{ animation:none !important; } }
 
-/* ===== cartão HOJE ===== */
-#hoje{ margin:0 0 calc(16px * var(--s)); padding:calc(13px * var(--s)) calc(14px * var(--s)) calc(14px * var(--s)); border-radius:16px; border:1px solid rgba(255,176,32,.45); background:linear-gradient(135deg, rgba(255,176,32,.13), rgba(255,176,32,.02) 50%), #141a23; font-family:'Inter','Segoe UI',Arial,sans-serif; }
+/* ===== cartão HOJE (v175): mesmo painel e mesmo cartão do quadro de próximos ===== */
+#hoje{ margin:0 0 calc(16px * var(--s)); padding:calc(14px * var(--s)) calc(16px * var(--s)) calc(16px * var(--s)); background:#141a23; border:1px solid var(--linha);
+  border-radius:16px; box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px -18px rgba(0,0,0,.8); font-family:'Inter','Segoe UI',Arial,sans-serif; }
 #hoje[hidden]{ display:none; }
-html[data-layout="stack"] #hoje{ margin:0 0 12px; padding:12px; }
-.hj-cab{ display:flex; align-items:center; gap:8px; margin:0 0 calc(10px * var(--s)); font-size:calc(12.5px * var(--s)); color:#aab5c2; }
-.hj-cab b{ font-size:calc(12px * var(--s)); font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:#ffc14d; }
-.hj-ponto{ width:8px; height:8px; border-radius:50%; background:#ffb020; flex:none; }
-.hj-grade{ display:grid; grid-template-columns:1fr; gap:calc(9px * var(--s)); }
-html[data-layout="desktop"] .hj-grade{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-.hj-item{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:calc(6px * var(--s)) calc(12px * var(--s)); text-align:left; width:100%; padding:calc(12px * var(--s)) calc(13px * var(--s)) calc(12px * var(--s)) calc(16px * var(--s));
-  border-radius:13px; border:1px solid var(--linha); background:linear-gradient(180deg, #151b25, #10151d); color:#e8edf3; font-family:inherit; cursor:pointer; position:relative; overflow:hidden; }
-.hj-item::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--acc); }
-.hj-item:active{ transform:scale(.985); }
-.hj-txt{ min-width:0; display:flex; flex-direction:column; gap:calc(2px * var(--s)); }
-.hj-cal{ font-size:calc(10.5px * var(--s)); font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--acc-t); }
-.hj-local{ font-size:calc(19px * var(--s)); line-height:1.2; font-weight:800; letter-spacing:-.01em; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.hj-local.vazio{ color:#8793a3; font-weight:600; font-size:calc(16px * var(--s)); }
-.hj-hora{ font-size:calc(13.5px * var(--s)); font-weight:600; color:#cfd8e3; font-variant-numeric:tabular-nums; white-space:pre; overflow:hidden; text-overflow:ellipsis; }
-.hj-st{ text-align:right; display:flex; flex-direction:column; gap:calc(3px * var(--s)); align-items:flex-end; }
-.hj-st b{ font-size:calc(12.5px * var(--s)); font-weight:800; padding:calc(6px * var(--s)) calc(11px * var(--s)); border-radius:999px; white-space:nowrap; background:#232830; color:#cfd8e3; font-variant-numeric:tabular-nums; }
-.hj-st em{ font-style:normal; font-size:calc(11.5px * var(--s)); color:#8f9bab; white-space:nowrap; font-variant-numeric:tabular-nums; }
-.hj-item[data-estado="antes"] .hj-st b{ background:#ffb020; color:#1d1400; }
-.hj-item[data-estado="agora"] .hj-st b{ background:rgba(97,240,0,.16); color:#a6ff7a; box-shadow:0 0 0 1px rgba(97,240,0,.5) inset; }
-.hj-item[data-estado="agora"] .hj-st b::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:#7ee04a; margin-right:7px; vertical-align:1px; animation:hjPulsa 1.6s ease-in-out infinite; }
+html[data-layout="stack"] #hoje{ margin:0 0 14px; padding:12px; }
+#hoje .hj-cab{ cursor:default; }
+html[data-layout="stack"] #hoje .px-res{ flex-basis:auto; order:0; margin-left:auto; }
+.hj-vivo{ width:8px; height:8px; border-radius:50%; background:#7ee04a; flex:none; animation:hjPulsa 1.8s ease-in-out infinite; }
 @keyframes hjPulsa{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
-.hj-barra{ grid-column:1 / -1; height:4px; border-radius:4px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:calc(4px * var(--s)); }
+.hj-grade{ display:grid; grid-template-columns:1fr; gap:calc(10px * var(--s)); }
+html[data-layout="desktop"] .hj-grade{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+.hj-item{ flex-wrap:wrap; width:100%; }
+.hj-item .px-txt{ flex:1 1 0; }
+.hj-ini{ width:calc(62px * var(--s)); padding:calc(8px * var(--s)) 0 calc(9px * var(--s)); }
+.hj-ini b{ font-size:calc(17px * var(--s)); letter-spacing:-.01em; margin-top:2px; }
+html[data-layout="stack"] .hj-ini{ width:64px; }
+.hj-item .px-l{ font-size:calc(16px * var(--s)); font-weight:700; }
+html[data-layout="stack"] .hj-item .px-l{ font-size:17px; }
+.hj-item .px-h{ white-space:pre; overflow:hidden; text-overflow:ellipsis; }
+.hj-st{ flex:none; display:flex; flex-direction:column; gap:calc(4px * var(--s)); align-items:flex-end; text-align:right; }
+.hj-st b{ font-size:calc(12px * var(--s)); font-weight:700; padding:calc(6px * var(--s)) calc(11px * var(--s)); border-radius:999px; white-space:nowrap; background:#232830; color:#cfd8e3; font-variant-numeric:tabular-nums; }
+.hj-st em{ font-style:normal; font-size:calc(11.5px * var(--s)); color:#8f9bab; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.hj-item[data-estado="antes"] .hj-st b{ background:var(--acc); color:#fff; }
+.hj-item[data-estado="antes"] .hj-st b.claro{ color:#16130a; }
+.hj-item[data-estado="agora"] .hj-st b{ background:rgba(97,240,0,.14); color:#a6ff7a; box-shadow:0 0 0 1px rgba(97,240,0,.45) inset; }
+.hj-item[data-estado="sem"] .hj-st b{ background:#ffb020; color:#1d1400; }
+.hj-barra{ flex:1 1 100%; height:4px; border-radius:4px; background:rgba(255,255,255,.08); overflow:hidden; margin:calc(2px * var(--s)) 0 0 3px; }
 .hj-barra[hidden]{ display:none; }
 .hj-barra i{ display:block; height:100%; border-radius:4px; background:#7ee04a; }
-.hj-item:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+html[data-layout="stack"] .hj-st b{ font-size:12px; } html[data-layout="stack"] .hj-st em{ font-size:11.5px; }
 html.entrando #hoje{ animation:v158Sobe .5s .08s cubic-bezier(.2,.8,.2,1) both; }
-@media (prefers-reduced-motion:reduce){ html.entrando #hoje, .hj-item[data-estado="agora"] .hj-st b::before{ animation:none !important; } }
+@media (prefers-reduced-motion:reduce){ html.entrando #hoje, .hj-vivo{ animation:none !important; } }
+@media (hover:none), (pointer:coarse){ #hoje{ box-shadow:none !important; } }
 html[data-layout="stack"] .hj-aisp{ display:none; }   /* no celular a AISP fica só na ficha */
 .hj-aisp{ color:#8f9bab; font-weight:500; }
 </style>
@@ -3113,7 +3122,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 174;
+const VERSAO_SITE = 175;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -4549,32 +4558,40 @@ function servicosDeHoje(agora){
 function renderHoje(){
   const el = document.getElementById('hoje');
   if(!el) return;
-  const agora = new Date(), lista = semConta() ? [] : servicosDeHoje(agora);
+  const agora = new Date(), stack = document.documentElement.dataset.layout === 'stack';
+  // celular: só na aba do próprio serviço (na aba SERVIÇO não aparece); computador: os dois
+  const filtro = stack ? (LOCAIS[activeTab] ? activeTab : '-') : null;
+  const lista = (semConta() || filtro === '-') ? [] : servicosDeHoje(agora).filter(x => !filtro || x.cal === filtro);
   if(!lista.length){ el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false; el.innerHTML = '';
-  const cab = document.createElement('div'); cab.className = 'hj-cab';
-  cab.innerHTML = '<span class="hj-ponto"></span><b>Hoje</b><span></span>';
-  cab.lastChild.textContent = SEMANA[agora.getDay()] + ', ' + agora.getDate() + ' de ' + MESES_CAP[agora.getMonth()].toLowerCase();
+  const cab = document.createElement('div'); cab.className = 'px-cab hj-cab';
+  cab.innerHTML = '<span class="hj-vivo"></span><h2></h2><span class="px-res"></span>';
+  cab.querySelector('h2').textContent = filtro === 'delegada' ? 'Delegada de hoje' : filtro === 'dejem' ? 'Dejem de hoje' : 'Hoje';
+  cab.querySelector('.px-res').textContent = SEMANA[agora.getDay()] + ', ' + agora.getDate() + ' de ' + MESES_CAP[agora.getMonth()].toLowerCase();
   el.appendChild(cab);
   const grade = document.createElement('div'); grade.className = 'hj-grade'; el.appendChild(grade);
   lista.forEach(x => {
     const a = ACENTO[x.cor] || { c:'#00B0F0', t:'#6fd3ff' }, loc = localDoDetalhe(x.cal, x.det);
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'hj-item';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'px-item hj-item';
     b.style.setProperty('--acc', a.c); b.style.setProperty('--acc-t', a.t);
-    b.innerHTML = '<span class="hj-txt"><span class="hj-cal"></span><span class="hj-local"></span><span class="hj-hora"></span></span>' +
+    b.innerHTML = '<span class="px-dia hj-ini' + (a.claro ? ' claro' : '') + '"><i></i><b></b></span>' +
+      '<span class="px-txt"><span class="px-q"></span><span class="px-l"></span><span class="px-h"></span></span>' +
       '<span class="hj-st"><b></b><em></em></span><span class="hj-barra"><i></i></span>';
-    b.querySelector('.hj-cal').textContent = (x.cal === 'dejem' ? 'DEJEM · Metrô' : 'DELEGADA') + (x.ontem ? ' · começou ontem' : '');
-    const l = b.querySelector('.hj-local'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
-    { const hh = b.querySelector('.hj-hora'); hh.textContent = x.ini ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
+    b.querySelector('.hj-ini i').textContent = x.ini ? 'Início' : 'Hora';
+    b.querySelector('.hj-ini b').textContent = x.ini ? x.det.i : '--:--';
+    b.querySelector('.px-q').textContent = (x.cal === 'dejem' ? 'DEJEM · Metrô' : 'DELEGADA') + (x.ontem ? ' · começou ontem' : '');
+    const l = b.querySelector('.px-l'); l.textContent = loc ? loc.nome : 'Local não informado'; l.classList.toggle('vazio', !loc);
+    { const hh = b.querySelector('.px-h'); hh.textContent = x.ini ? faixaTxt(x.det.i, x.det.f) : 'Horário não informado';
       if(x.ini && loc && loc.aisp){ const ai = document.createElement('span'); ai.className = 'hj-aisp'; ai.textContent = '  ·  AISP ' + loc.aisp; hh.appendChild(ai); } }
     const st = b.querySelector('.hj-st'), barra = b.querySelector('.hj-barra');
-    let estado = 'sem', t1 = 'Sem horário', t2 = 'toque para informar', pct = 0;
+    let estado = 'sem', t1 = 'Completar', t2 = 'sem local/horário', pct = 0;
     if(x.ini){
       if(agora < x.ini){ estado = 'antes'; t1 = 'Começa em ' + duracaoCurta((x.ini - agora) / 60000); t2 = 'às ' + x.det.i; }
       else if(agora < x.fim){ estado = 'agora'; t1 = 'Em andamento'; t2 = 'termina em ' + duracaoCurta((x.fim - agora) / 60000); pct = Math.round((agora - x.ini) / (x.fim - x.ini) * 100); }
       else { estado = 'fim'; t1 = 'Encerrado'; t2 = 'terminou às ' + x.det.f; pct = 100; }
     }
     b.dataset.estado = estado;
+    if(a.claro) st.querySelector('b').classList.add('claro');
     st.querySelector('b').textContent = t1; st.querySelector('em').textContent = t2;
     barra.querySelector('i').style.width = pct + '%'; barra.hidden = estado !== 'agora';
     b.addEventListener('click', () => { vibrar(8); if(!loc || !x.ini) abrirServico({ modo:'editar', keys:[x.k], cal: x.cal, cor: x.cor }); else abrirFicha(x.k); });
