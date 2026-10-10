@@ -1,9 +1,16 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 175
+  VERSÃO ATUAL: 176
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v176: BARRA DAS CORES refeita (celular e computador). (1) Saiu o item
+    "Feriado" da barra: ela mostra só as cores que servem para pintar (os
+    feriados continuam marcados em lilás dentro dos calendários). (2) Cada
+    cor virou um botão com o fundo e o contorno no próprio tom, e o Apagar
+    virou um botão com ícone de borracha. No celular os botões têm todos a
+    mesma largura e cabem numa linha só (o Apagar não cai mais para a linha
+    de baixo). Ao tocar, o botão acende na cor.
   v175: CARTÃO "HOJE" refeito. (1) No celular ele só aparece na aba do
     próprio serviço: a Delegada de hoje na aba DELEGADA e a Dejem de hoje
     na aba DEJEM; na aba SERVIÇO não aparece. No computador mostra os dois.
@@ -2486,6 +2493,29 @@ html.entrando #hoje{ animation:v158Sobe .5s .08s cubic-bezier(.2,.8,.2,1) both; 
 @media (hover:none), (pointer:coarse){ #hoje{ box-shadow:none !important; } }
 html[data-layout="stack"] .hj-aisp{ display:none; }   /* no celular a AISP fica só na ficha */
 .hj-aisp{ color:#8f9bab; font-weight:500; }
+
+/* ===== v176: barra das cores (botões no tom de cada cor) ===== */
+.swatch[data-color="azul"]{ --c:0,176,240; } .swatch[data-color="verde"]{ --c:97,240,0; } .swatch[data-color="rosa"]{ --c:47,99,255; }
+.swatch[data-color="roxo"]{ --c:234,179,8; } .swatch[data-color="dourado"]{ --c:255,107,0; } .swatch[data-color="vermelho"]{ --c:255,42,58; }
+.swatch:not(.apagar){ background:linear-gradient(180deg, rgba(var(--c),.34), rgba(var(--c),.12)); border:1px solid rgba(var(--c),.62); color:#fff; font-weight:600;
+  box-shadow:0 1px 0 rgba(255,255,255,.07) inset; }
+.swatch:not(.apagar) .swatch-value{ color:#fff; font-weight:700; }
+.swatch:not(.apagar) .box{ width:13px; height:13px; box-shadow:0 0 0 2px rgba(255,255,255,.16), 0 0 10px rgba(var(--c),.9); }
+@media (hover:hover){ .swatch:not(.apagar):hover{ background:linear-gradient(180deg, rgba(var(--c),.32), rgba(var(--c),.12)); border-color:rgba(var(--c),.85); } }
+.swatch:not(.apagar):active, .swatch:not(.apagar).flash{ background:rgba(var(--c),.5); border-color:rgb(var(--c)); transform:scale(.96); }
+.swatch.apagar{ background:rgba(255,255,255,.045); border:1px solid var(--linha2); color:#cfd8e3; font-weight:600; gap:7px; }
+.swatch.apagar .sw-ic{ width:15px; height:15px; flex:none; color:#aab5c2; }
+@media (hover:hover){ .swatch.apagar:hover{ border-color:#ff6b6b; color:#ffb4b4; background:rgba(255,80,80,.10); } .swatch.apagar:hover .sw-ic{ color:#ff8a8a; } }
+.swatch.apagar:active, .swatch.apagar.flash{ background:rgba(255,80,80,.28); border-color:#ff6b6b; transform:scale(.96); }
+/* celular: todos na mesma linha, com a mesma largura */
+html[data-layout="stack"] .palette{ flex-wrap:nowrap; gap:7px; padding:8px; align-items:stretch; }
+html[data-layout="stack"] .swatch{ flex:1 1 0; min-width:0; flex-direction:column; justify-content:center; gap:6px; min-height:56px; padding:8px 4px; border-radius:13px; font-size:13px; text-align:center; white-space:nowrap; }
+html[data-layout="stack"] .swatch:not(.apagar) .swatch-value{ font-size:13px; letter-spacing:0; }
+html[data-layout="stack"] .swatch:not(.apagar){ background:linear-gradient(180deg, rgba(var(--c),.34), rgba(var(--c),.12)); }
+html[data-layout="stack"] .swatch:not(.apagar):active, html[data-layout="stack"] .swatch:not(.apagar).flash{ background:rgba(var(--c),.55); }
+html[data-layout="stack"] .swatch.apagar{ flex:0 0 62px; gap:5px; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase; background:rgba(255,255,255,.045); }
+html[data-layout="stack"] .swatch.apagar .sw-ic{ width:19px; height:19px; }
+@media (hover:none), (pointer:coarse){ .swatch:not(.apagar) .box{ box-shadow:0 0 0 2px rgba(255,255,255,.16) !important; } .swatch:not(.apagar){ box-shadow:none; } }
 </style>
 </head>
 <body>
@@ -2546,12 +2576,9 @@ html[data-layout="stack"] .hj-aisp{ display:none; }   /* no celular a AISP fica 
     <span class="group-label">Dejem:</span>
     <div class="swatch" data-color="vermelho"><span class="box" style="background:var(--vermelho)"></span><span class="swatch-value">R$&nbsp;<span class="legenda-valor" id="legendaVermelho">307,36</span></span></div>
   </div>
-  <div class="palette-group leg-grupo" data-cal="todas">
-    <span class="leg-feriado"><i></i>Feriado</span>
-  </div>
   <div class="palette-group" data-cal="todas">
     <span class="group-label">Ações:</span>
-    <div class="swatch apagar" data-color=""><span class="box"></span>Apagar</div>
+    <div class="swatch apagar" data-color=""><svg class="sw-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20H9.5L4.3 14.8a1.5 1.5 0 0 1 0-2.1l8.4-8.4a1.5 1.5 0 0 1 2.1 0l5 5a1.5 1.5 0 0 1 0 2.1L11.5 20"/><path d="M8.5 8.5l7 7"/></svg><span class="sw-rot">Apagar</span></div>
   </div>
 </div>
 <div class="escala-dica" id="dicaEscala" hidden>Calendário de serviço em branco. Toque em <b>ESCALA</b> para preencher os seus dias automaticamente, ou toque nos dias e escolha uma cor.</div>
@@ -3122,7 +3149,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 175;
+const VERSAO_SITE = 176;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
