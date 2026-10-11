@@ -1,9 +1,17 @@
 <!--
   ============================================
-  VERSÃO ATUAL: 178
+  VERSÃO ATUAL: 179
   ============================================
 
   Histórico de versões (calendário SERVIÇO / DELEGADA / DEJEM):
+  v179: VÁRIOS DIAS SELECIONADOS: a janela "Local e horário" agora pergunta
+    UM DIA DE CADA VEZ ("Dia 1 de 3 - segunda-feira, 12 de outubro"), cada
+    um com o seu local e o seu horário, em ordem de data. Antes o mesmo
+    local/horário ia para todos os dias. Atalhos: "Repetir o do dia
+    anterior" (um toque preenche igual ao dia de antes) e "Usar este nos
+    dias restantes" (para quando for mesmo tudo igual). O botão Voltar
+    retorna ao dia anterior sem perder o que foi escolhido. Nada é pintado
+    até confirmar o último dia.
   v178: horários prontos da DELEGADA (cor azul cobalto) na janela "Local e
     horário": saiu o da manhã (06:00 - 14:00) e entraram 13:05 - 21:05 e
     13:30 - 21:30; o 14:00 - 22:00 continua. Em EDITAR VALORES o nome da
@@ -2544,6 +2552,20 @@ html[data-layout="stack"] .tabs button{ transition:color .25s ease; }
 .ab-q.q1{ animation-delay:.25s; } .ab-q.q2{ animation-delay:.37s; } .ab-q.q3{ animation-delay:.49s; }
 .ab-q.q4{ animation-delay:.61s; } .ab-q.q5{ animation-delay:.73s; } .ab-q.q6{ animation-delay:.85s; }
 @keyframes abAcende{ from{ opacity:0; transform:scale(.3); } to{ opacity:1; transform:none; } }
+
+/* ===== v179: vários dias, um de cada vez ===== */
+.sv-passos{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.sv-passos[hidden]{ display:none; }
+.sv-p{ min-width:30px; height:30px; padding:0 6px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:#1b1f25; border:1px solid #2b323b; color:#8793a3; }
+.sv-p.feito{ background:rgba(126,224,74,.14); border-color:rgba(126,224,74,.45); color:#a6ff7a; }
+.sv-p.atual{ background:var(--acc); border-color:var(--acc-t); color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.14); }
+.sv-repetir{ display:block; width:100%; text-align:left; margin:0 0 16px; padding:11px 13px; border-radius:12px; border:1px dashed var(--acc-t); background:rgba(255,255,255,.04);
+  color:#e9eef4; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sv-repetir:active{ transform:scale(.98); }
+.sv-todos{ flex:1 1 100%; order:-1; background:transparent !important; color:var(--acc-t) !important; font-size:13px !important; font-weight:600 !important; min-height:34px !important; padding:0 !important;
+  text-decoration:underline; text-underline-offset:3px; }
+.sv-repetir:focus-visible, .sv-todos:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -2748,8 +2770,10 @@ html[data-layout="stack"] .tabs button{ transition:color .25s ease; }
       <div class="sv-eyebrow"><i class="sv-dot"></i><span id="servEyebrow"></span></div>
       <h3 class="sv-title" id="servTitulo"></h3>
       <p class="sv-sub" id="servSub"></p>
+      <div class="sv-passos" id="servPassos" hidden></div>
     </div>
     <div class="sv-body">
+      <button type="button" class="sv-repetir" id="servRepetir" hidden></button>
       <div class="sv-sec"><span class="sv-num" id="servNum1">1</span><span id="servLocalRot">Local</span><em id="servLocalSel"></em></div>
       <div class="sv-grid" id="servGrid"></div>
       <input type="text" class="modal-input sv-outro" id="servOutro" placeholder="Digite o nome do local" maxlength="60" autocomplete="off" aria-label="Outro local" hidden>
@@ -2762,6 +2786,7 @@ html[data-layout="stack"] .tabs button{ transition:color .25s ease; }
       <p class="sv-dur" id="servDur" aria-live="polite"></p>
     </div>
     <div class="sv-foot">
+      <button type="button" class="sv-todos" id="servTodos" hidden></button>
       <button type="button" class="sv-skip" id="servPular">Pintar sem informar</button>
       <button type="button" class="sv-cancel" id="servCancelar">Cancelar</button>
       <button type="button" class="sv-ok" id="servSalvar">Salvar</button>
@@ -3178,7 +3203,7 @@ async function avisoSemContaModal(){
 let syncUpdatedAt = (lerJSONLocal(SYNC_META_KEY) || {}).updatedAt || 0;
 let syncTimer = null;
 let syncPendente = false;
-const VERSAO_SITE = 178;
+const VERSAO_SITE = 179;
 let syncNuvemUpdatedAt = 0;
 let syncEstado = 'off';   // off | sync | ok | erro
 let syncMensagem = '';
@@ -4403,17 +4428,21 @@ function atalhosDeHorario(cal, cor){
 }
 function abrirServico(op){
   sv = Object.assign({ fora: [], local: null, outro: false, fimManual: false }, op);
+  // vários dias: um de cada vez, em ordem de data, cada um com o seu local e horário
+  sv.keys = sv.keys.slice().sort((a, b) => a.split('|')[2] < b.split('|')[2] ? -1 : 1);
+  sv.multi = sv.modo === 'novo' && sv.keys.length > 1;
+  sv.passo = 0; sv.escolhas = [];
   const caixa = servOverlay.querySelector('.sv-box');
   aplicarAcento(caixa, sv.cor);
   const cal = sv.cal, dejem = cal === 'dejem';
   const valor = RATES[cal] && RATES[cal][sv.cor];
   document.getElementById('servEyebrow').textContent = (dejem ? 'DEJEM · Metrô' : 'DELEGADA') + (valor !== undefined ? ' · R$ ' + fmtBRL(valor) : '');
   document.getElementById('servTitulo').textContent = sv.modo === 'editar' ? 'Editar local e horário' : (dejem ? 'Em qual estação e horário?' : 'Em qual área e horário?');
-  document.getElementById('servSub').textContent = datasPorExtenso(sv.keys).replace(/^./, c => c.toUpperCase());
+  document.getElementById('servSub').textContent = datasPorExtenso(sv.multi ? [sv.keys[0]] : sv.keys).replace(/^./, c => c.toUpperCase());
   document.getElementById('servLocalRot').textContent = dejem ? 'Estação do Metrô' : 'Área de atuação';
   // se todos os dias já têm o mesmo local/horário, a janela abre com ele
   const dets = sv.keys.map(k => detalhes[k]);
-  const igual = dets[0] && dets.every(d => d && d.l === dets[0].l && d.n === dets[0].n && d.i === dets[0].i && d.f === dets[0].f) ? dets[0] : null;
+  const igual = !sv.multi && dets[0] && dets.every(d => d && d.l === dets[0].l && d.n === dets[0].n && d.i === dets[0].i && d.f === dets[0].f) ? dets[0] : null;
   servOutro.value = ''; servIni.value = ''; servFim.value = '';
   if(igual){
     const achado = igual.l ? LOCAIS[cal].find(x => x.aisp === igual.l) : null;
@@ -4448,9 +4477,37 @@ function abrirServico(op){
     servChips.appendChild(c);
   });
   document.getElementById('servPular').hidden = sv.modo !== 'novo';
+  if(sv.multi) servCarregarPasso(); else { document.getElementById('servPassos').hidden = true; document.getElementById('servRepetir').hidden = true; }
   servRefrescar();
   caixa.scrollTop = 0;
   servOverlay.classList.add('show');
+}
+// Vários dias: mostra o dia do passo atual (com o que já tinha sido escolhido para ele, se a pessoa voltou)
+function servAplicarEscolha(e){
+  sv.local = null; sv.outro = false; servOutro.value = '';
+  const achado = e.l ? LOCAIS[sv.cal].find(x => x.aisp === e.l) : null;
+  if(achado) sv.local = achado; else if(e.n){ sv.outro = true; servOutro.value = e.n; }
+  servIni.value = e.i || ''; servFim.value = e.f || ''; sv.fimManual = !!e.f;
+}
+function servCarregarPasso(){
+  const n = sv.keys.length, k = sv.keys[sv.passo], d = dataDeStr(k.split('|')[2]);
+  document.getElementById('servTitulo').textContent = 'Dia ' + (sv.passo + 1) + ' de ' + n;
+  document.getElementById('servSub').textContent = (SEMANA[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES_CAP[d.getMonth()].toLowerCase() + ' de ' + d.getFullYear()).replace(/^./, c => c.toUpperCase());
+  const ps = document.getElementById('servPassos'); ps.hidden = false; ps.innerHTML = '';
+  sv.keys.forEach((kk, i) => {
+    const b = document.createElement('span'); b.className = 'sv-p' + (i < sv.passo ? ' feito' : i === sv.passo ? ' atual' : '');
+    b.textContent = Number(kk.slice(-2)); ps.appendChild(b);
+  });
+  const salvo = sv.escolhas[sv.passo];
+  if(salvo) servAplicarEscolha(salvo);
+  else {
+    sv.local = null; sv.outro = false; sv.fimManual = false; servOutro.value = ''; servIni.value = ''; servFim.value = '';
+    const unico = HORARIOS_COR[sv.cor] && HORARIOS_COR[sv.cor].length === 1 ? HORARIOS_COR[sv.cor][0] : null;
+    if(unico){ servIni.value = unico[0]; servFim.value = unico[1]; }
+  }
+  const ant = sv.passo > 0 ? sv.escolhas[sv.passo - 1] : null, rp = document.getElementById('servRepetir');
+  rp.hidden = !ant;
+  if(ant) rp.textContent = 'Repetir o do dia anterior: ' + nomeCurto(sv.cal, ant.n) + ' · ' + faixaTxt(ant.i, ant.f);
 }
 function servLocalAtual(){
   if(!sv) return null;
@@ -4470,19 +4527,34 @@ function servRefrescar(){
   document.getElementById('servNum2').classList.toggle('ok', horaOk);
   document.getElementById('servDur').textContent = horaOk ? dur.replace(/^./, c => c.toUpperCase())
     : (i && f ? 'O início e o término não podem ser iguais.' : 'Informe o início: o término é sugerido com ' + HORAS_PADRAO + ' horas e pode ser alterado.');
-  const n = sv.keys.length;
-  servSalvarBtn.textContent = sv.modo === 'editar' ? 'Salvar' : (n === 1 ? 'Pintar dia' : 'Pintar ' + n + ' dias');
+  const n = sv.keys.length, ultimo = !sv.multi || sv.passo === n - 1;
+  servSalvarBtn.textContent = sv.modo === 'editar' ? 'Salvar' : !ultimo ? 'Próximo dia' : (n === 1 ? 'Pintar dia' : 'Pintar ' + n + ' dias');
   servSalvarBtn.disabled = !(loc && horaOk);
+  document.getElementById('servCancelar').textContent = (sv.multi && sv.passo > 0) ? 'Voltar' : 'Cancelar';
+  const td = document.getElementById('servTodos'), resto = n - 1 - sv.passo;
+  td.hidden = !(sv.multi && resto > 0 && loc && horaOk);
+  if(!td.hidden) td.textContent = 'Usar este ' + (resto === 1 ? 'também no outro dia' : 'nos ' + resto + ' dias restantes');
 }
 function fecharServico(){ servOverlay.classList.remove('show'); sv = null; }
 function concluirServico(comInfo){
   if(!sv) return;
   const s = sv, loc = servLocalAtual(), i = servIni.value, f = servFim.value;
   if(comInfo && !(loc && duracaoTxt(i, f))) return;
-  s.keys.forEach(k => {
+  // vários dias: guarda a escolha deste dia e passa para o próximo; só pinta no último
+  if(s.multi && comInfo){
+    s.escolhas[s.passo] = { l: loc.aisp, n: loc.nome, m: loc.modulo, i: i, f: f };
+    if(s.passo < s.keys.length - 1 && !s.usarEmTodos){
+      s.passo++; vibrar(8);
+      servCarregarPasso(); servRefrescar();
+      servOverlay.querySelector('.sv-box').scrollTop = 0;
+      return;
+    }
+    if(s.usarEmTodos) for(let j = s.passo + 1; j < s.keys.length; j++) s.escolhas[j] = Object.assign({}, s.escolhas[s.passo]);
+  }
+  s.keys.forEach((k, idx) => {
     const p = k.split('|');
     if(s.modo === 'novo'){ setColorFor(p[0], p[1], p[2], s.cor); recemPintados.add(k); }
-    if(comInfo) detalhes[k] = { l: loc.aisp, n: loc.nome, m: loc.modulo, i: i, f: f };
+    if(comInfo) detalhes[k] = (s.multi && s.escolhas[idx]) ? s.escolhas[idx] : { l: loc.aisp, n: loc.nome, m: loc.modulo, i: i, f: f };
   });
   fecharServico();
   vibrar(15);
@@ -4494,7 +4566,7 @@ function concluirServico(comInfo){
   render();
   if(s.modo === 'editar'){ abrirFicha(s.keys[0]); return; }
   const n = s.keys.length;
-  barraAviso(n + (n === 1 ? ' dia pintado' : ' dias pintados') + (comInfo ? ' · ' + nomeCurto(s.cal, loc.nome) + ' ' + faixaTxt(i, f) : ''), 2600);
+  barraAviso(n + (n === 1 ? ' dia pintado' : ' dias pintados') + (comInfo && !s.multi ? ' · ' + nomeCurto(s.cal, loc.nome) + ' ' + faixaTxt(i, f) : ''), 2600);
   if(s.fora.length){
     const frases = Array.from(new Set(s.fora.map(k => k.split('|')[0]))).map(c => {
       const info = ATIVIDADE_INFO[c];
@@ -4512,7 +4584,21 @@ servIni.addEventListener('input', () => {
 servFim.addEventListener('input', () => { if(sv) sv.fimManual = servFim.value !== ''; servRefrescar(); });
 servSalvarBtn.addEventListener('click', () => concluirServico(true));
 document.getElementById('servPular').addEventListener('click', () => concluirServico(false));
-document.getElementById('servCancelar').addEventListener('click', () => { const ed = sv && sv.modo === 'editar' ? sv.keys[0] : null; fecharServico(); if(ed) abrirFicha(ed); });
+document.getElementById('servCancelar').addEventListener('click', () => {
+  if(sv && sv.multi && sv.passo > 0){   // Voltar: guarda o que já estava preenchido neste dia e mostra o anterior
+    const loc = servLocalAtual(), i = servIni.value, f = servFim.value;
+    if(loc && duracaoTxt(i, f)) sv.escolhas[sv.passo] = { l: loc.aisp, n: loc.nome, m: loc.modulo, i: i, f: f };
+    sv.passo--; servCarregarPasso(); servRefrescar(); servOverlay.querySelector('.sv-box').scrollTop = 0;
+    return;
+  }
+  const ed = sv && sv.modo === 'editar' ? sv.keys[0] : null; fecharServico(); if(ed) abrirFicha(ed);
+});
+document.getElementById('servRepetir').addEventListener('click', () => {
+  if(!sv || !sv.multi || sv.passo < 1 || !sv.escolhas[sv.passo - 1]) return;
+  vibrar(8); servAplicarEscolha(sv.escolhas[sv.passo - 1]); servRefrescar();
+  const cx = servOverlay.querySelector('.sv-box'); cx.scrollTop = cx.scrollHeight;
+});
+document.getElementById('servTodos').addEventListener('click', () => { if(sv && sv.multi){ sv.usarEmTodos = true; concluirServico(true); } });
 servOverlay.addEventListener('click', e => { if(e.target === servOverlay) fecharServico(); });
 
 
